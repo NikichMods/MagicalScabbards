@@ -1,6 +1,6 @@
 # MagicalScabbards — статус
 
-**По состоянию на 2026-11-06:** организационный набор подготовлен локально; **ещё не опубликован** в `NikichMods/MagicalScabbards`. Внешняя создание/настройка GitHub-репозитория, привязка remote и локального Codex-проекта остаются отдельными действиями.
+**По состоянию на 2026-11-06:** локальный checkout и публичный GitHub bootstrap завершены. Проект готов к первому статическому исследованию после отдельного запуска задания.
 
 - Принятая продуктовая цель: отображать штатные ножны Хильды в бою и скрывать вне боя; небольшой магический VFX желателен, но не должен блокировать базовый прототип.
 - Предварительно установлен релевантный путь чтения боевого состояния **в другом принятом моде** CombatHUD 0.4.1: `GameGlobal:GetIsBattleState(character)`.
@@ -12,6 +12,9 @@
 
 Проверить локально разницу между 15 ресурсами No Scabbard и оригиналами, владельцев/привязку ножен к `hilda_BP` и механизм переключения. Подробности и stop-condition: [RESEARCH_PLAN.md](RESEARCH_PLAN.md); готовое узкое задание: [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md).
 
-## Организационная граница
+## Bootstrap
 
-Локальная структура может быть инициализирована как отдельный Git checkout с веткой `main`. Наличие локального коммита **не означает** создания удалённого GitHub-репозитория, push, настройки Topics или регистрации проекта в Codex. При появлении remote обновить этот статус фактическим URL/HEAD SHA/Topics и точным результатом синхронизации. Целевые Topics: `game-asterigos`, `nikichmods-mod`.
+- Отдельный checkout в группе Asterigos. Сохранён исходный коммит архива `6e8062ca782f2fa72f058a949e7b1e62fc8a052f`.
+- Публичный репозиторий и `origin` — [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards). Ветка по умолчанию — [`main`](https://github.com/NikichMods/MagicalScabbards/tree/main), локальная `main` отслеживает `origin/main`. Первый push проверен по [коммиту 5aab668](https://github.com/NikichMods/MagicalScabbards/commit/5aab6683a9e9360070412d44e470282eb8710c97).
+- Topics — `game-asterigos`, `nikichmods-mod`.
+- Единственный общий источник исследований игры — [NikichMods/Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
