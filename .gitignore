@@ -3,6 +3,7 @@
 .env
 .env.*
 *.log
+*.zip
 *.rar
 *.7z
 *.pak

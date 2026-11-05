@@ -5,8 +5,8 @@
 ## Основания, уже подтверждённые для соседних проектов
 
 - [Asterigos-Research / Verified Runtime](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/VERIFIED_RUNTIME.md): Steam 1.09/build 12996889, UE4.27, UE4SS 83330635; безопасное получение owning pawn в рабочем HUD; ограничения ownership/lifecycle.
-- [CombatHUD 0.4.1 Scripts/main.lua](https://github.com/NikichMods/CombatHUD/blob/main/Scripts/main.lua): `GameGlobal:GetIsBattleState(character)` читается в принятой игре. Это **проверенный пример чтения**, не доказательство готовности любого нового consumer.
-- [HildaSoftLight lighting feasibility](https://github.com/NikichMods/HildaSoftLight/blob/research/lighting-feasibility/docs/LIGHTING_FEASIBILITY.md): сохранённые SCS `hilda_BP` и отражённые методы `SceneComponent:SetVisibility/SetHiddenInGame`, lifecycle-границы. Материалы по свету **не** доказывают принадлежность ножен к отдельному SceneComponent.
+- [CombatHUD 0.4.1 Scripts/main.lua](https://github.com/NikichMods/CombatHUD/blob/CombatHUD-v0.4.1/Scripts/main.lua#L380): `GameGlobal:GetIsBattleState(character)` читается в принятой игре. Это **проверенный пример чтения**, не доказательство готовности любого нового consumer.
+- [HildaSoftLight lighting feasibility](https://github.com/NikichMods/HildaSoftLight/blob/1f3038992ed507b5abea1d88a9aad9ef74235a21/docs/LIGHTING_FEASIBILITY.md): сохранённые SCS `hilda_BP` и отражённые методы `SceneComponent:SetVisibility/SetHiddenInGame`, lifecycle-границы. Материалы по свету **не** доказывают принадлежность ножен к отдельному SceneComponent.
 - [NO_SCABBARD_REFERENCE.md](NO_SCABBARD_REFERENCE.md): 15 названий ресурсов из стороннего пакета, но никаких доказанных runtime-owners.
 
 ## Минимальные вопросы, способные изменить архитектуру

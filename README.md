@@ -24,6 +24,6 @@
 - [Ограничения лицензирования](LICENSING.md)
 - [Общие правила NikichMods](https://github.com/NikichMods/DevRules)
 - [Общие исследования игры](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md)
-- [Принятая механика обнаружения боя в CombatHUD](https://github.com/NikichMods/CombatHUD/blob/main/Scripts/main.lua)
+- [Принятая механика обнаружения боя в CombatHUD](https://github.com/NikichMods/CombatHUD/blob/CombatHUD-v0.4.1/Scripts/main.lua#L380)
 
-Проект задуман как **отдельный** репозиторий `NikichMods/MagicalScabbards` (публичный, по стандартной политике организации). Общий Research не дублируется. Никакие извлечённые файлы игры или стороннего мода не публикуются здесь.
+Проект ведётся в отдельном публичном репозитории [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards). Общий Research не дублируется. Никакие извлечённые файлы игры или стороннего мода не публикуются здесь.

@@ -8,7 +8,7 @@
 - **Единый общий Research по игре:** [NikichMods/Asterigos-Research](https://github.com/NikichMods/Asterigos-Research), точка входа [docs/RESEARCH_INDEX.md](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md). Переиспользовать подтверждённые факты, новые переносимые результаты промотировать туда со ссылкой на источник. Не копировать изменяемый статус этого мода в Research.
 - Локальные канонические файлы: [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), [docs/STATUS.md](docs/STATUS.md), [docs/RESEARCH_PLAN.md](docs/RESEARCH_PLAN.md); исследовательские исходные свидетельства — [docs/NO_SCABBARD_REFERENCE.md](docs/NO_SCABBARD_REFERENCE.md).
 - Общий принятый baseline других модов: **Steam 1.09 / build 12996889, UE4.27, Windows x64, UE4SS v3.0.1-1181-g83330635**. Это **не** подтверждение работы MagicalScabbards на данном или любом другом окружении.
-- [CombatHUD 0.4.1](https://github.com/NikichMods/CombatHUD/blob/main/Scripts/main.lua) использует `GameGlobal:GetIsBattleState(character)`; переносимость пути чтения необходимо перепроверить в контексте владельца этого мода. Не добавлять зависимость от CombatHUD без обоснования.
+- [CombatHUD 0.4.1](https://github.com/NikichMods/CombatHUD/blob/CombatHUD-v0.4.1/Scripts/main.lua#L380) использует `GameGlobal:GetIsBattleState(character)`; переносимость пути чтения необходимо перепроверить в контексте владельца этого мода. Не добавлять зависимость от CombatHUD без обоснования.
 
 ## Границы и инварианты
 
