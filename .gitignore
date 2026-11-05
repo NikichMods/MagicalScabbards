@@ -1,0 +1,24 @@
+# Local environment and non-public host/third-party evidence
+.local/
+.env
+.env.*
+*.log
+*.rar
+*.7z
+*.pak
+*.utoc
+*.ucas
+*.uasset
+*.umap
+*.dll
+*.exe
+*.pdb
+UHTHeaderDump/
+Saved/
+__pycache__/
+.vs/
+.idea/
+# Generated outputs and scratch
+build/
+dist/
+.cache/
