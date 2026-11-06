@@ -21,7 +21,9 @@
 
 ## Следующий шаг
 
-[Delayed hide gate 06](https://github.com/NikichMods/MagicalScabbards/blob/7a73588daef189c5d20d3724b1044124c6e63515/docs/SCABBARD_DELAYED_HIDE_GATE_06.md) установил раздельные штатные флаги `bVisible`/`bHiddenInGame`, но не доказал эксклюзивное владение hidden на cudgel sheath. Предложенный аппаратный trace **не выбран автоматически**. Сначала [сравнить варианты A/B/C](RESEARCH_PLAN.md#пересмотр-способа-скрытия-пространство-решений-2026-11-07-пока-гипотезы): кооперативный `SetVisibility`, отдельный `SetHiddenInGame`, штатные pawn scabbard actions и их фактическое покрытие. Затем выбрать минимальный ограниченный research write-test с явным cleanup. **Production и write-test остаются BLOCKED** до применимого gate и отдельного разрешения. См. [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md).
+[Cooperative-cudgel-01](https://github.com/NikichMods/MagicalScabbards/blob/1b4d36f61836900a8e81c18826259ed90da4777b/docs/RESEARCH_PLAN.md#результат-cooperative-cudgel-01--2026-11-07): ограниченный игровой write-test уже проведён. **Частичный runtime PASS**: hide после 2016 мс, ранний release до InHand, отмена pending hide подтверждены по логу. **Не принято:** видимое изменение комплекта (пользователь не заметил разницы), ручной STOP при active mask, обычная InHand атака и overlap раннего draw с поздним Sheath post. Источник `cooperative-cudgel-01` заморожен, не переписывать. **Production BLOCKED**.
+
+Следующий шаг: [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md) — подготовить кандидат 02 с точечными исправлениями InHand skill/overlap, проверить offline стабы, затем только по отдельному разрешению сделать **сопоставимое визуальное «до/после» на одном stock cudgel** и проверить STOP при active mask. Pawn `scabbard_a/b` только read-only до отдельного gate. Не возвращаться к широкому native trace без новой конкретной причины.
 
 ## Организация
 
