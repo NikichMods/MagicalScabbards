@@ -21,7 +21,7 @@
 
 ## Следующий шаг
 
-Выбран A, кооперативный SetVisibility только на stock cudgel sheath. **Research write-test READY к подготовке** по [ограниченному протоколу](RESEARCH_PLAN.md#выбор-механизма-и-первый-обратимый-тест--2026-11-07), с обязательными стабами до запуска и отдельным разрешением. Кандидат cooperative-cudgel-01 подготовлен, Lua-стабы прошли. Игровой сеанс и runtime acceptance ожидаются. **Production BLOCKED**.
+Выбран A, кооперативный SetVisibility только на stock cudgel sheath. **Research write-test READY к подготовке** по [ограниченному протоколу](RESEARCH_PLAN.md#выбор-механизма-и-первый-обратимый-тест--2026-11-07), с обязательными стабами до запуска и отдельным разрешением. cooperative-cudgel-01 дал частичный runtime PASS: hide, ранний возврат и отмена доказаны по логу; визуальная приёмка и STOP на активной маске открыты. Сеанс завершился на обычном skill в InHand; отдельно обнаружено пересечение draw pre с поздним Sheath post. Результат в RESEARCH_PLAN.md. **Production BLOCKED**.
 
 ## Организация
 
