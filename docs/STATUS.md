@@ -21,7 +21,9 @@
 
 ## Следующий шаг
 
-Провести узкое research-only установление **семантических событий draw/stow**, а не повторное исследование battle getter. [RESEARCH_PLAN.md](RESEARCH_PLAN.md), [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). До отдельного разрешения не запускать игру и не писать в её объекты.
+[Visual boundaries 05](https://github.com/NikichMods/MagicalScabbards/blob/2b0421075f0b3951ebc9f07d3d7d82121017863f/docs/SCABBARD_VISUAL_BOUNDARIES_05.md): read-only видео/лог-сверка завершена. `BeginDoSkill` pre для первого удара до переноса оружия (визуально согласуется с ранним draw); `EquipModeChange(Sheath)` post — **раньше** окончания видимого убирания. Независимость `bHiddenInGame` и rollback не доказаны. **Write-test BLOCKED**. Следующий этап: найти завершение stow-анимации после commit и проверить канал маски **статически прежде нового наблюдения**; см. [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). Не повторять уже доказанные native writers/видимость.
+
+Не запускать игру и не писать в игровые объекты без отдельного разрешения.
 
 ## Организация
 
