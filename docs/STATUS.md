@@ -21,9 +21,7 @@
 
 ## Следующий шаг
 
-[Visual boundaries 05](https://github.com/NikichMods/MagicalScabbards/blob/2b0421075f0b3951ebc9f07d3d7d82121017863f/docs/SCABBARD_VISUAL_BOUNDARIES_05.md): read-only видео/лог-сверка завершена. `BeginDoSkill` pre для первого удара до переноса оружия (визуально согласуется с ранним draw); `EquipModeChange(Sheath)` post — **раньше** окончания видимого убирания. Независимость `bHiddenInGame` и rollback не доказаны. **Write-test BLOCKED**. Следующий этап: проверить независимый канал маски/rollback и схему отменяемого таймера; **не искать точный конец stow-анимации**; см. [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). Не повторять уже доказанные native writers/видимость.
-
-Не запускать игру и не писать в игровые объекты без отдельного разрешения.
+[Delayed hide gate 06](https://github.com/NikichMods/MagicalScabbards/blob/7a73588daef189c5d20d3724b1044124c6e63515/docs/SCABBARD_DELAYED_HIDE_GATE_06.md) установил раздельные штатные флаги `bVisible`/`bHiddenInGame`, но не доказал эксклюзивное владение hidden на cudgel sheath. Предложенный аппаратный trace **не выбран автоматически**. Сначала [сравнить варианты A/B/C](RESEARCH_PLAN.md#пересмотр-способа-скрытия-пространство-решений-2026-11-07-пока-гипотезы): кооперативный `SetVisibility`, отдельный `SetHiddenInGame`, штатные pawn scabbard actions и их фактическое покрытие. Затем выбрать минимальный ограниченный research write-test с явным cleanup. **Production и write-test остаются BLOCKED** до применимого gate и отдельного разрешения. См. [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md).
 
 ## Организация
 
