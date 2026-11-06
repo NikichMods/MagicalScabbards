@@ -21,7 +21,7 @@
 
 ## Следующий шаг
 
-Провести узкое research-only установление **семантических событий draw/stow**, а не повторное исследование battle getter. [RESEARCH_PLAN.md](RESEARCH_PLAN.md), [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). До отдельного разрешения не запускать игру и не писать в её объекты.
+[Equipment transition 03](SCABBARD_EQUIPMENT_TRANSITION_03.md): штатный writer видимости cudgel установлен статически. Нужен один read-only сеанс для доставки hooks и порядка socket/visibility. Write-test остаётся BLOCKED.
 
 ## Организация
 
