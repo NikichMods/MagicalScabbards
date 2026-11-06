@@ -1,46 +1,45 @@
-# Codex — MagicalScabbards: штатный equipment transition и границы скрытия (research-only)
+# Codex — MagicalScabbards: early draw + stow visual boundary (research-only)
 
-**Следующий отдельный шаг после [draw/stow 02](https://github.com/NikichMods/MagicalScabbards/blob/6df404c2666fb2a23760efdc43f0ddde1ea2fd0a/docs/SCABBARD_DRAW_STOW_RESEARCH_02.md#результат-повтора-2026-11-06).** Задание для пользовательского запуска локального Codex, не инструкция самостоятельно запускать/перезапускать игру.
+**Следующий отдельный исследовательский этап после [SCABBARD_EQUIPMENT_TRANSITION_03](https://github.com/NikichMods/MagicalScabbards/blob/9d14c1aee0eba54e750b074384147f555af6bad8/docs/SCABBARD_EQUIPMENT_TRANSITION_03.md).** Это готовое задание для запуска пользователем локального Codex, не разрешение самостоятельно запускать, закрывать или перезапускать игру.
 
-## Принятая цель
+## Продуктовая цель
 
-Убранный комплект **ножны + оружие внутри них** скрыт после полного убирания. С **начала вынимания** мод снимает своё подавление; далее до конца убирания игра управляет штатными мешами и анимациями. Оружие в руках никогда не скрывается нашим модом. Ни combat getter, ни произвольный таймер, ни поздняя стадия удара не считаются доказательством нужного перехода. VFX — позже.
+Скрывать **ножны и убранное в них оружие** при устойчивом fully stowed. **С начала штатного вынимания** снять собственное подавление, чтобы ножны были видны в течение draw; удерживать их видимыми пока оружие в руках и при stowing; **после завершения убирания** опять скрыть весь комплект. Не затрагивать оружие в руках. Не использовать `GetIsBattleState`, костыль по фиксированному таймеру или начало первой атаки как недоказанный синоним draw start.
 
-## Исходные доказательства (не повторять)
+## Состояние доказательств (не повторять)
 
-- Статика: [SCABBARD_STATIC_RESEARCH_01.md](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md) — original meshes и владельцы, штатные Blueprint writers, составные *_sheath.
-- Runtime 01: [SCABBARD_RUNTIME_RESEARCH_01.md](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md) — компоненты текущего local pawn и жизненный цикл.
-- Draw/stow 02: [точный повтор `6df404c`](https://github.com/NikichMods/MagicalScabbards/blob/6df404c2666fb2a23760efdc43f0ddde1ea2fd0a/docs/SCABBARD_DRAW_STOW_RESEARCH_02.md#результат-повтора-2026-11-06). На **одном живом `HildaCudgel_BP_C`** стык `scabbard_a → cudgel_r_hand → scabbard_a`; основные флаги `false/true → true/false → false/true`. `hilda_cudgel_atk1_idle` доставлен через native BeginDoSkill только на маршруте draw; **убирание прошло без BeginDoSkill/EndDoSkill**. Эти два метода **не признаны** источником stow completion.
-- Общие подтверждённые сведения: [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/commit/21b0830846d0d90f3ad3b2d8e4d819420976376d).
+- [Static 01](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md), [Runtime 01](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md), [Draw/stow 02](https://github.com/NikichMods/MagicalScabbards/blob/6df404c2666fb2a23760efdc43f0ddde1ea2fd0a/docs/SCABBARD_DRAW_STOW_RESEARCH_02.md) — неизменённая историческая доказательная база.
+- [Equipment transition 03](https://github.com/NikichMods/MagicalScabbards/blob/9d14c1aee0eba54e750b074384147f555af6bad8/docs/SCABBARD_EQUIPMENT_TRANSITION_03.md): тот же актуальный cudgel проходит `cudgel_r_hand → dual_l_hand (Floating) → scabbard_a (Sheath)`. При входе в InHand или Sheath **socket уже изменён до первого `SetVisibility` pre**. Затем два native `SetVisibility`, затем post `HildaCudgel_BP_C:EquipModeChange`. Аргумент post = новый enum, отражённое поле `equipMode` в callback ещё **старое**. Штатный `bVisible` обоих компонентов точно имеет писателя; `bHiddenInGame` у cudgel на снимках оставался false, но это не доказывает отсутствие writers.
+- `EquipModeChange(Sheath)` — подтверждённый **commit видимости**, а НЕ доказанный конец анимации. `EquipModeChange(InHand)` и `SetVisibility` pre НЕ доказаны как начало draw: они уже после переноса сокета.
+- `BeginDoSkill/EndDoSkill` не сопровождали stow на проверенном маршруте; повторять тот же observer без новой конкретной гипотезы не нужно.
+- Новые общие факты промотированы в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/commit/6c1b31578f288a81ffe2ed164bfbbc4def837eeb).
 
-## Предпроверки и Git
+## Восстановление и правила
 
-1. Сначала проверь актуальный checkout, worktree, branch, HEAD, staged/unstaged/untracked и upstream, не теряя незавершённую работу. Прочитай актуальные `NikichMods/DevRules/WORKING_RULES.md`, `ENGINEERING_RULES.md`, `GIT_WORKFLOW.md`, `CODEX_WORKFLOW.md`, по применимости `RUNTIME_INTEGRATION.md` и `RUNTIME_TEST_HARNESS.md`.
-2. Затем локальный `AGENTS.md`, `docs/REQUIREMENTS.md`, `docs/STATUS.md` и текущий этот документ с `main`, плюс отчёт `02` из исследовательской ветки. Работай в существующей пригодной research-ветке или создай `research/scabbard-equipment-commit-03` без утраты истории/evidence.
-3. Сначала определи самый дешёвый достаточный путь по ENGINEERING_RULES: **не обязан** искать сложный полный call graph, если более простой проверяемый штатный сигнал/состояние уже обеспечивает всю принятую семантику.
+Сверь фактическое состояние локального checkout, worktrees, веток, HEAD, staged/unstaged/untracked и upstream. Прочитай актуальные `NikichMods/DevRules/WORKING_RULES.md`, `ENGINEERING_RULES.md`, `GIT_WORKFLOW.md`, `CODEX_WORKFLOW.md`, при применимости `RUNTIME_INTEGRATION.md` и `RUNTIME_TEST_HARNESS.md`, потом `AGENTS.md`, `docs/REQUIREMENTS.md`, `docs/STATUS.md` и этот документ. Не затри незавершённую работу. Используй отдельную согласованную исследовательскую ветку (например, `research/scabbard-draw-boundaries-04`) поверх актуального продуктового контракта; не вливай исследовательское в `main` без принятия.
 
-## Точное техническое исследование
+## Два минимальных вопроса
 
-**Вопрос:** что именно штатно переводит текущий `HildaCudgel_BP_C` из `cudgel_r_hand` обратно на `scabbard_a`, переключая `SkeletalMesh.bVisible` и `hilda_cudgel_sheath.bVisible`, и какой доступный сигнал наиболее надёжно различает:
-- **начало drawing** (мод должен немедленно убрать свою маску);
-- **stow complete** (теперь можно включить маску всего убранного комплекта).
+**A. Ранний сигнал draw.** Найти игровой вход/intent/dispatched action, который **предшествует** переносу cudgel на `cudgel_r_hand` и предшествует первому визуально значимому движению его вынимания. В первую очередь адресно проследить сохранённый cooked источник/вызовы `GameGlobal:SetWeaponInHand`, `SetWeaponAttachReplaceBySlotName`, запросы `hilda_cudgel_switch_enter`, возможные штатные owner/animation events и исходную команду игрока. Это **кандидаты**, ни один не считать доказанным лишь по имени/декларации. Сравнить ранний native/event seam против узкого read-only наблюдения стадий. Отдельно выяснить, способен ли сигнал вернуть ножны при извлечении **без атаки**, не привязываясь к battle.
 
-Сначала **статически** проследи доступные прежние локальные cooked Blueprint bytecode/UHT и weapon/timeline data от актуального equipment owner к операции смены attachment/socket, mesh visibility и завершению штатного stow. Установи подтверждённое имя(имена) точек записи/commit, владельца, аргументы, конкретный consumer и прочность вызова через UE4SS. Не угадывай API из названия `set weapon in hand`, `scabbard_on/off` или материала. Отделяй факт reflected UFunction от гарантии доставки callback.
+**B. Поздний безопасный stow.** Есть `EquipModeChange(Sheath)` после двух штатных записей и при socket `scabbard_a`. Установить, достаточно ли этого для **визуально завершённого** убирания, или штатная анимация продолжается позже. Проверить на имеющихся timeline/animation data, затем минимальным реальным наблюдением при необходимости. `Floating` НЕ считать окончательным `stowed`; поле `equipMode` внутри post может запаздывать.
 
-**Сравни два минимальных варианта:** (A) доступное семантическое событие/commit экипировки; (B) наблюдение проверенного текущего attachment/socket и компонентных флагов без произвольных таймеров. Для B явно оцени, способен ли он дать **начало draw**, а не только позднее перемещение в руку. Не отвергай простое наблюдение лишь потому, что оно не является событием; не выбирай его, если семантика визуальной анимации будет нарушена. Для обоих отдельно — штатные писатели `bVisible/bHiddenInGame`, владение нашей обратимой маской, повторный pawn/load, stale _Use/_Unuse, риск скрыть held weapon и границы применимости.
+**Отдельно, но строго минимально:** построить доказательную стратегию собственного suppress/rollback для подтверждённого *holstered assembly*: `HildaCudgel_BP_C.hilda_cudgel_sheath` (+ соответствующие pawn scabbard_a/b лишь при необходимости). Не писать в `bVisible` поверх доказанного штатного writer без специального обоснования; проверить `bHiddenInGame` как кандидат **только на объекте с понятными writers** и не переносить его логику без проверки на pawn components, где у игры уже есть штатный writer этого канала. Никаких действий со stale `_Use/_Unuse`, active held mesh или новым pawn по старому указателю. Продумать отмену подавления в draw, lifecycle, отключение, rollback только собственных живых записей.
 
-Если direct/source evidence недостаточно, спроектируй **один узкий read-only runtime observer** на **одном выбранном cudgel**, снимающий реальные переходы в минимальном window, с верификацией owner/attachment и порядком writer/commit. Подтверди вызов целевой точки до фильтрации (учитывая провал предыдущего ExecuteAction observation). Бюджет, stop, cleanup, hash source/log, без спама. Используй существующий observer/проверенный UE4SS паттерн, не создавать общий debugger или per-frame scan всех объектов. При отсутствии разрешённого игрового запуска оставь подготовленный observer в исследовательской ветке как **не проверенный в игре**.
+## Доказательный маршрут и бюджет
 
-## Ограничения
+**Сначала без запуска игры:** повторно использовать сохранённые exports, bytecode, UHT, инструменты Codex и публичные отчёты. Выбрать самый короткий путь, который реально отличает ранний draw от позднего equipment commit. Если достаточно, остановить статический этап без нового observer.
 
-- **Только read-only.** Не менять `SetVisibility`, `SetHiddenInGame`, не запускать gameplay write-test, не ставить production мод и VFX, не менять сейвы, игровые файлы, No Scabbard и соседние моды.
-- **Не запускать/перезапускать игру без разрешения пользователя.** Не повторять BeginDoSkill/EndDoSkill-исследование как основную гипотезу: последний повтор уже показал его недостаточность для stow данного маршрута. Не исследовать все семейства оружия раньше закрытия одного representative path.
-- Не публиковать proprietary assets, сырые дампы, приватные локальные пути/логи или секреты.
+Если остаётся конкретный runtime gap — подготовить **один bounded read-only observer** на одном и том же stock cudgel: события/стадии до InHand + (если требуется) граница после Sheath, верифицированный локальный pawn, точная identity, своевременное read-only чтение socket/visible/hidden, ограниченный объём логирования. Зафиксировать исходник/хэш, доказать доставку до фильтрации, протестировать маршруты и cleanup на Lua stubs. Не повторять старый post-only monitor ради тех же значений.
 
-## Результат и остановка
+**Не запускать и не перезапускать игру без явного согласия пользователя.** Для проверки визуального начала/конца использовать ограниченное ручное наблюдение пользователя или другой действительно независимый критерий, а не утверждать видимую границу только по логам или по предположительной длине таймлайна.
 
-В `docs/SCABBARD_EQUIPMENT_TRANSITION_03.md` сохранить baseline, source/observer provenance, воспроизводимый путь операции (или точный разрыв), **сравнение A vs B**, минимальный writer/consumer, роль узлов `scabbard_a`/`cudgel_r_hand`, конкретные условия READY/BLOCKED для следующего **обратимого write-test**. Статически доказанное и реально наблюдённое отделить друг от друга. В `docs/STATUS.md` актуализировать только результат; новые переносимые подтверждённые игровые факты по правилам продвинуть в Asterigos-Research.
+## Запрещено
 
-**Stop condition:** одна доказанная и достаточно узкая дорожка для начала draw + конца stow и безопасный класс целей **либо** конкретный недостающий seam и краткий следующий необходимый шаг. Не переходить автоматически к production-патчу или новой версии.
+Production/write-test, `SetVisibility`, `SetHiddenInGame`, замена игровых пакетов, модификация сейва, загрузка сторонних ассетов в репозиторий, VFX, релиз/версия/CI. Не расширять на все семейства до доказанного representative path. Не превращать research в вечное построение полного native call graph — остановиться при достаточном семантическом seam или конкретном блокере.
 
-Commit/push в research-ветку с проверкой remote SHA; ответить кратко: branch, SHA, push, подтверждено, не доказано, READY/BLOCKED и один следующий шаг.
+## Выход и stop-condition
+
+В новом `docs/SCABBARD_DRAW_BOUNDARIES_04.md` записать: исходный baseline/evidence и hashes; обоснованный кандидат **до** первого значимого движения при draw; подходит/не подходит `EquipModeChange(Sheath)` как точка hide; ownership/rollback для одного полного убранного комплекта, риски и альтернативы; явное **READY/BLOCKED** для следующего **отдельного** обратимого write-test. Если проверить ранний seam в игре невозможно в этом этапе, честно оставить `NOT_RUNTIME_TESTED` и перечислить только конкретный недостающий шаг. Обновить mod-local status по факту. Новые общие подтверждённые game facts — в `Asterigos-Research` с ссылкой на первичные доказательства.
+
+**Стоп:** доказана одна ранняя draw граница + одна безопасная поздняя stow граница + жизнеспособная обратимая поверхность управления **или** установлен точный блокер с одним следующим шагом. Исследовательские изменения commit+push с проверкой remote SHA. Ответ — коротко: branch, SHA, push, confirmed, unknown, READY/BLOCKED, next action.
