@@ -21,7 +21,7 @@
 
 ## Следующий шаг
 
-[Equipment transition 03](SCABBARD_EQUIPMENT_TRANSITION_03.md): штатный writer видимости cudgel установлен статически. Нужен один read-only сеанс для доставки hooks и порядка socket/visibility. Write-test остаётся BLOCKED.
+[Equipment transition 03](SCABBARD_EQUIPMENT_TRANSITION_03.md): подтверждены live socket → SetVisibility → EquipModeChange post, промежуточный Floating и отставание equipMode. Write-test BLOCKED: нужен ранний draw до переноса, подтверждение визуальной границы и обоснованный rollback.
 
 ## Организация
 
