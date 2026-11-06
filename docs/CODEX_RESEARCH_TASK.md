@@ -1,40 +1,23 @@
-# Codex — MagicalScabbards: доказать завершение stow и пригодность канала маски
+# Codex — MagicalScabbards: безопасный delayed hide (research-only)
 
-**Следующая ограниченная исследовательская задача, после [Visual boundaries 05](https://github.com/NikichMods/MagicalScabbards/blob/2b0421075f0b3951ebc9f07d3d7d82121017863f/docs/SCABBARD_VISUAL_BOUNDARIES_05.md).** Не запускать игру без разрешения. Не создавать production-код или write-test до READY.
+**Новый принятый контракт:** `docs/REQUIREMENTS.md`. С начала draw — **немедленно отпустить собственную маску**, отменить pending hide. После `EquipModeChange(Sheath)` post — **через 2 секунды** попытаться скрыть весь убранный комплект (ножны + оружие внутри), **только** если повторная проверка подтверждает текущий устойчивый stowed, прежнюю identity и отсутствие новых draw/смены экипировки. Новые Sheath events должны инвалидировать предыдущий таймер. Боевой getter не участвует; точный stow-end animation event больше не нужен.
 
-## Продуктовый контракт
+## Факты и запреты повторов
 
-После **полного** убирания ножны и оружие внутри исчезают. С **начала вынимания** маска снимается, дальше штатная игра управляет анимацией и оружием в руках. Боевой статус не участвует; произвольный постоянный таймер не считается подтверждённым окончанием анимации.
+Используй [Draw boundaries 04](https://github.com/NikichMods/MagicalScabbards/blob/5b2e60e0e571788afdfd76969d2a975dbc25cdeb/docs/SCABBARD_DRAW_BOUNDARIES_04.md) и [Visual boundaries 05](https://github.com/NikichMods/MagicalScabbards/blob/2b0421075f0b3951ebc9f07d3d7d82121017863f/docs/SCABBARD_VISUAL_BOUNDARIES_05.md) и общий Asterigos-Research: ранний `BeginDoSkill` pre первого удара cudgel доказан до переноса (только этот маршрут); `EquipModeChange(Sheath)` post наступает **до** завершения видимого движения, но одобренная 2-секундная задержка снимает потребность искать завершение анимации; `bVisible` у cudgel имеет штатного writer, независимость `bHiddenInGame` не доказана. Не повторять готовый анализ native equipment pipeline/animation timestamps.
 
-## Уже подтверждено, не повторять
+## Точный следующий research gate
 
-- На stock cudgel `BeginDoSkill` pre с pending `hilda_cudgel_atk1_idle` срабатывает до socket hand-placement; видеоряд согласуется с ранним draw первого удара, но точное опережение первого кадра и **другие сценарии** не доказаны.
-- Цепочка штатного `EquipModeChange(Sheath)`/socket/`bVisible` изучена. В игровом видео `Sheath` post приходит **до завершения движения руки** (после него до steady pose ещё несколько десятых секунды): использовать этот post как hide-trigger **нельзя**.
-- Глобальный reflected `SetHiddenInGame` observer работал в целом, но не получил целевые или положительные контрольные calls; `bHiddenInGame=false` у sheath на снимках **не доказывает отсутствия writer**.
-- Все прежние отчёты `STATIC_01`, `RUNTIME_01`, `DRAW_STOW_02`, `EQUIPMENT_TRANSITION_03`, `DRAW_BOUNDARIES_04`, `VISUAL_BOUNDARIES_05` и [Asterigos-Research `b6d7a5f`](https://github.com/NikichMods/Asterigos-Research/commit/b6d7a5f1b1b72a166fb341a772d8737acaf4bba9) переиспользовать, не повторять сеансы или широкую дизассемблировку.
+Сверь актуальный checkout/worktrees, staged/unstaged/untracked, remote и локальный `AGENTS.md`; прочитай DevRules `WORKING_RULES.md`, `ENGINEERING_RULES.md`, `GIT_WORKFLOW.md`, `CODEX_WORKFLOW.md` и применимые `RUNTIME_INTEGRATION.md`, `RUNTIME_TEST_HARNESS.md`. Сначала исследуй существующие статические данные и исходники.
 
-## Восстановление и источники
+**Один вопрос:** каким способом безопасно и обратимо подавлять видимость **только текущего** `HildaCudgel_BP_C.hilda_cudgel_sheath`, не перезаписывая штатный `bVisible` и не затрагивая основной held weapon mesh?
 
-Сверь реальный локальный checkout/worktree/HEAD, staged/unstaged/untracked, remote и active writer; не затри незавершённое. Прочитай актуальные `NikichMods/DevRules/WORKING_RULES.md`, `ENGINEERING_RULES.md`, `GIT_WORKFLOW.md`, `CODEX_WORKFLOW.md`; для любого нового observer — `RUNTIME_TEST_HARNESS.md`, при необходимости `RUNTIME_INTEGRATION.md`. Затем `AGENTS.md`, `docs/REQUIREMENTS.md`, `docs/STATUS.md`, результаты `05`. Работай в подходящей отдельной research-ветке; не мержи в `main`.
+- Проверь возможный отдельный `bHiddenInGame` и возможных других writers/propagation; прежнее `hidden=false` или отсутствие reflected callbacks не доказывает отсутствие чужого писателя.
+- Определи минимальные identity/lifecycle guards и стратегию восстановления **только собственной** записи на том же живом компоненте, включая reload/new pawn, смену экипировки и отключение.
+- Зафиксируй политику таймера как детерминированный одноразовый state machine, включая отмену/инвалидацию при draw, повторном Sheath, interruption, unknown/lifecycle; исключить запись по stale callback.
+- Для первого потенциального теста ограничить scope одним подтверждённым cudgel. Покрытие других способов draw (не только первой атаки) — отдельный заявленный пробел, не выдавать за уже поддерживаемое.
+- Проверь `ENGINEERING_RULES.md` per-change READY/BLOCKED: owner, final writer/consumer, blast radius, invariants, acceptance. Если нужное доказательство по каналу недоступно статически, назови **одну** минимальную read-only проверку. Не расширяй разбор на все оружия.
 
-## Конкретный нерешённый вопрос № 1 — конец stow
+**Только research:** не запускать игру без разрешения; не создавать production-мод, write-test, gameplay writes, VFX/релиз/CI. Не трогать чужие файлы, не публиковать игровые ассеты, сырые приватные логи и пути.
 
-**Найти штатную границу после `EquipModeChange(Sheath)`, когда реально завершилась видимая фаза убирания молота.** Прежде чем писать observer, адресно посмотри существующие cooked `sheath_cudgel` / `sheath_all` timelines, animation notifies, стейт-машину/монтаж и уже выгруженный `hilda_AnimBP`: есть ли в них семантическое завершение `stowing`, возврат в idle, выход из нужной анимации или другое доступное read-only состояние. Не считать завершающий номер ключа или `EndDoSkill` гарантированным событием без маршрута доставки. Не требовать универсальный native call graph, если одного проверяемого animation-state seam достаточно.
-
-Сравни **(A)** реальное штатное завершение animation/montage/state и **(B)** проверяемое ожидание устойчивого состояния `Sheath` с дополнительным признаком **прекращения stow-анимации**. Вариант B не должен быть «через N мс спрятать», поскольку N из одного видео не устанавливает завершение при любых прерываниях/скоростях.
-
-Только если static evidence не позволяет выбрать достаточный seam, подготовь **один узкий read-only runtime observer** на один stock cudgel, который проверяет выбранный animation-state сигнал и связывает его с уже установленным `Sheath` commit и визуальным отпусканием молота. Не дублируй прежние HUD-метки/видеозапись ради тех же событий без нового проверяемого сигнала. При отсутствии разрешения на запуск оставь `NOT_RUNTIME_TESTED` и короткий сценарий для пользователя.
-
-## Конкретный нерешённый вопрос № 2 — канал и rollback
-
-Для **только** актуального `HildaCudgel_BP_C.hilda_cudgel_sheath` выбери минимальную независимую и обратимую маску. Сначала статически проверь владельцев/пишущие пути `bHiddenInGame` и альтернативы на этом компоненте. `bVisible` уже занят штатным writer. Нельзя считать отсутствие reflected callbacks доказательством отсутствия прямых native/propagation записей, а отождествлять флаг с владельцем записи — ошибкой. Если независимость нельзя подтвердить статикой, назови конкретный проверяемый контракт и **отдельный** безопасный write-test/rollback gate, но **не выполняй запись сейчас**.
-
-Опиши строгие guards: актуальный pawn/actor/component/asset/attachment, граница `stowed`, собственное владение, отмена при draw/interrupt/change pawn, отказ от записи при unknown, rollback только на том же живом экземпляре. Не затрагивать main held mesh, `_Use/_Unuse`, pawn `scabbard_a/b` в первом эксперименте, чужие моды/сейвы.
-
-## Границы, результат, стоп
-
-Исследование **только static + при реальной необходимости read-only**. Не запускать/перезапускать игру без явного разрешения пользователя. Не устанавливать/писать production-мод, `SetHiddenInGame`, `SetVisibility`, VFX, версии, релизы, CI; не включать proprietary assets/dumps/private logs в GitHub.
-
-Один файл `docs/SCABBARD_STOW_EXIT_06.md`: точные подтверждённые источники, различие между кандидатами и доказательством, валидный stow-end seam или конкретный разрыв, решение по каналу/rollback, `READY/BLOCKED` **для одного обратимого cudgel hide/show write-test**, один следующий шаг. Статус mod-local обновить по результату; переносимые факты — в Asterigos-Research с первичным источником, только если появились новые.
-
-**Стоп:** либо выбран доказанный stow-end + жизнеспособный guarded suppress/rollback для узкого теста, либо локализован конкретный недостающий вызов/состояние и один минимальный способ его проверить. Не расширять автоматически на все оружия и не производить непрошеных дополнительных исследований. Commit+push research branch с проверкой remote SHA и кратким отчётом.
+В отдельной research-ветке записать `docs/SCABBARD_DELAYED_HIDE_GATE_06.md`: результат анализа канала, политики отмены/rollback, READY/BLOCKED для одного обратимого cudgel write-test и один следующий шаг. Обновить mod-local STATUS по реальным результатам, общие новые доказанные игровые факты — в Asterigos-Research только при необходимости. Commit/push и проверка remote SHA. Не повторять исследование точного stow-animation end: это отменённый продуктовый блокер.
