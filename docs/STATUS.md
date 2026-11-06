@@ -21,7 +21,7 @@
 
 ## Следующий шаг
 
-[Visual boundaries 05](SCABBARD_VISUAL_BOUNDARIES_05.md): один read-only observer подготовлен и проверен офлайн. Для A/B/C требуется согласованный игровой сеанс с независимой визуальной сверкой. Write-test остаётся BLOCKED.
+[Visual boundaries 05](SCABBARD_VISUAL_BOUNDARIES_05.md): сеанс и визуальная сверка завершены. Begin pre первого удара предшествует переносу; Sheath post слишком рано для конца видимой фазы. Канал маски и rollback не доказаны. Write-test BLOCKED; следующий шаг — штатная граница выхода из stow после Sheath commit.
 
 ## Организация
 
