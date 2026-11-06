@@ -21,7 +21,9 @@
 
 ## Следующий шаг
 
-Провести узкое research-only установление **семантических событий draw/stow**, а не повторное исследование battle getter. [RESEARCH_PLAN.md](RESEARCH_PLAN.md), [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). До отдельного разрешения не запускать игру и не писать в её объекты.
+[Remote static 04](SCABBARD_REMOTE_STATIC_04.md): опубликованные отчёты подтверждают поздний socket→visibility→EquipModeChange commit, но **не содержат upstream caller до начала draw**. Оригинальные локальные cooked/CUE4Parse экспортные файлы в GitHub не опубликованы. Production gate остаётся **BLOCKED**. Минимальный следующий шаг — адресный локальный **статический** разбор callers `SetWeaponInHand` / `SetWeaponAttachReplaceBySlotName` и выбранных draw/stow timelines на существующем baseline, без запуска игры. Не повторять прежние native skill observer.
+
+[RESEARCH_PLAN.md](RESEARCH_PLAN.md), [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). До отдельного разрешения не запускать игру и не писать в её объекты.
 
 ## Организация
 
