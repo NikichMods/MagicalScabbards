@@ -21,9 +21,7 @@
 
 ## Следующий шаг
 
-[Visual boundaries 05](https://github.com/NikichMods/MagicalScabbards/blob/2b0421075f0b3951ebc9f07d3d7d82121017863f/docs/SCABBARD_VISUAL_BOUNDARIES_05.md): read-only видео/лог-сверка завершена. `BeginDoSkill` pre для первого удара до переноса оружия (визуально согласуется с ранним draw); `EquipModeChange(Sheath)` post — **раньше** окончания видимого убирания. Независимость `bHiddenInGame` и rollback не доказаны. **Write-test BLOCKED**. Следующий этап: проверить независимый канал маски/rollback и схему отменяемого таймера; **не искать точный конец stow-анимации**; см. [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). Не повторять уже доказанные native writers/видимость.
-
-Не запускать игру и не писать в игровые объекты без отдельного разрешения.
+[Delayed hide gate 06](SCABBARD_DELAYED_HIDE_GATE_06.md): отдельные биты native setter подтверждены, политика двухсекундного таймера и rollback определена условно. Write-test остаётся BLOCKED: нужен один read-only trace скрытого бита и запросов на точном sheath, чтобы определить владение маской в узком цикле.
 
 ## Организация
 
