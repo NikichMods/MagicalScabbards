@@ -21,7 +21,7 @@
 
 ## Следующий шаг
 
-Провести узкое research-only установление **семантических событий draw/stow**, а не повторное исследование battle getter. [RESEARCH_PLAN.md](RESEARCH_PLAN.md), [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md). До отдельного разрешения не запускать игру и не писать в её объекты.
+[Draw boundaries 04](SCABBARD_DRAW_BOUNDARIES_04.md): штатные timeline handlers и общий native equipment consumer прослежены до Blueprint dispatch и записи режима. Write-test BLOCKED: требуется отдельная read-only сверка раннего draw и позднего stow с визуальными границами и проверка канала маски.
 
 ## Организация
 
