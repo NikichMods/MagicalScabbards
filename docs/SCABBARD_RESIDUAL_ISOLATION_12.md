@@ -1,6 +1,6 @@
 # Изоляция остаточной геометрии поверх базового скрытия
 
-**scabbard-residual-isolation-01 · READY офлайн для одного ручного сеанса с обязательным live preflight · NOT_TESTED в игре · production BLOCKED.** База Steam 1.09 / build 12996889, UE4.27, UE4SS 83330635. [Исходник Lua](../research/scabbard-residual-isolation-01/write-test/Scripts/main.lua), SHA-256 `2526837d8812775636415e269d9c8af7460ccacbc0130d7732b84ba27494fc3e` (UTF-8 LF).
+**scabbard-residual-isolation-01 · игровой PASS поочерёдной изоляции с восстановлением · production BLOCKED.** База Steam 1.09 / build 12996889, UE4.27, UE4SS 83330635. [Исходник Lua](../research/scabbard-residual-isolation-01/write-test/Scripts/main.lua), SHA-256 `2526837d8812775636415e269d9c8af7460ccacbc0130d7732b84ba27494fc3e` (UTF-8 LF).
 
 ## Цели и границы
 
@@ -33,7 +33,7 @@
 
 Удерживать каждый кадр достаточно долго для различимого сравнения. Между изоляциями убедиться, что вернулся именно контрольный остаток. **Ctrl+Alt+F8** — STOP на любом шаге. При неожиданном изменении остановить тест. При `CLEANUP_PENDING` или отсутствии финального результата выйти без сохранения. Сравнивать только кадры с подтверждёнными фазами журнала. Вклад доказан, если деталь пропала при одиночном hide и вернулась после restore на фоне той же скрытой базы. Отсутствие разницы относится только к этому ракурсу и набору экипировки.
 
-Lua 5.4: полный цикл, девять границ STOP, STOP с уже поставленным в очередь шагом, 20 fault/lifecycle случаев PASS. Проверены частичные записи, пропуск callback, отказ восстановления, сторонние visible/hidden writers, смена pawn, actor mode/socket/owner и component identity, draw, equip callback, EndPlay и LoadMap. Стабы не проверяют игровой кадр или охват прямых native writers. Тест не установлен и в игре не запускался.
+Lua 5.4: полный цикл, девять границ STOP, STOP с уже поставленным в очередь шагом, 20 fault/lifecycle случаев PASS. Проверены частичные записи, пропуск callback, отказ восстановления, сторонние visible/hidden writers, смена pawn, actor mode/socket/owner и component identity, draw, equip callback, EndPlay и LoadMap. Стабы не проверяют игровой кадр или охват прямых native writers. На этапе офлайн-подготовки тест ещё не был установлен и запущен.
 
 ## Первый игровой сеанс — отказ preflight
 

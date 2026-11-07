@@ -1,6 +1,6 @@
 # Адресный снимок компонентов по списку No Scabbard
 
-**scabbard-asset-census-01 · READY офлайн для одного разрешённого read-only сеанса · NOT_TESTED в игре · production BLOCKED.** Steam 1.09 / build 12996889, UE4.27, UE4SS 83330635. Исходник [Scripts/main.lua](../research/scabbard-asset-census-01/observer/Scripts/main.lua), SHA-256 `a9eec3dd5320b34a3b26c20f6f6cfcd0a61d8b0a50169575d1c6dc4e3fd7eeca` (файл UTF-8 LF).
+**scabbard-asset-census-01 · игровой PASS одного read-only снимка · production BLOCKED.** Steam 1.09 / build 12996889, UE4.27, UE4SS 83330635. Исходник [Scripts/main.lua](../research/scabbard-asset-census-01/observer/Scripts/main.lua), SHA-256 `a9eec3dd5320b34a3b26c20f6f6cfcd0a61d8b0a50169575d1c6dc4e3fd7eeca` (файл UTF-8 LF).
 
 ## Точный фильтр
 
@@ -31,7 +31,7 @@
 
 ## Проверка и один игровой сеанс
 
-Lua 5.4, `stub.lua`: 12 сценариев PASS. Проверены нормальный census, повторный hotkey и дубликат, точный asset path, динамический ребёнок B, detached helper, конфликт owner, цикл, неправильные owner/parent контроля, потеря pawn, неверный режим, пустой результат, смена generation, оба лимита и STOP до постановки/после постановки в очередь. Скрипт observer не установлен.
+Lua 5.4, `stub.lua`: 12 сценариев PASS. Проверены нормальный census, повторный hotkey и дубликат, точный asset path, динамический ребёнок B, detached helper, конфликт owner, цикл, неправильные owner/parent контроля, потеря pawn, неверный режим, пустой результат, смена generation, оба лимита и STOP до постановки/после постановки в очередь. На этапе офлайн-подготовки observer ещё не был установлен.
 
 После отдельного разрешения на установку и запуск:
 
