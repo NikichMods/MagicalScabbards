@@ -26,6 +26,8 @@
 
 [scabbard-residual-isolation-01](SCABBARD_RESIDUAL_ISOLATION_12.md#повторный-сеанс--pass-для-поочерёдной-изоляции) — **PASS** для трёх одиночных изоляций при скрытой базе и штатного финального восстановления. Пользователь подтвердил визуальный вклад всех трёх дополнительных компонентов. Полное одновременное скрытие шести и production остаются непроверенными.
 
+[scabbard-dynamic-cudgel-01](SCABBARD_DYNAMIC_CUDGEL_13.md) подготовлен. Следующий gate — ручной PASS совместного hide/restore шести целей, затем отдельно вооружаемая динамическая стадия. Игра NOT_TESTED, production BLOCKED.
+
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
 ## Репозиторий
