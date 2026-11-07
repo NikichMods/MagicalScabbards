@@ -27,6 +27,8 @@
 
 [Игровой A/B-сеанс](SCABBARD_VISUAL_ISOLATION_AB_09.md#игровой-результат--2026-11-07) — **PASS** для изолированного hide/show A и B. A убирает длинный корпус и кольцо, B — небольшую накладку под медальоном. `hilda_cudgel_sheath + A + B` покрывают три подтверждённые детали по отдельности. Совместное покрытие и принадлежность остатка не установлены. **Production BLOCKED**.
 
+[Совместное скрытие 10](SCABBARD_COMBINED_VISIBILITY_10.md): отдельный кандидат **READY** для одного ручного сеанса, стабы PASS, игра NOT_TESTED.
+
 ## Организация
 
 - GitHub: [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards), default main; topics game-asterigos, nikichmods-mod.
