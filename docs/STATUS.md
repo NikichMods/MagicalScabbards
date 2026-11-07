@@ -25,6 +25,8 @@
 
 `cooperative-cudgel-02` — [игровой сеанс завершён](RESEARCH_PLAN.md#результат-игрового-сеанса-02--2026-11-07). **PASS** для hide через 2016 мс и ручного STOP с активной маской. По видео оранжевый нижний фрагмент исчезает и возвращается, основная деталь остаётся видимой. Обычная атака в руках, draw с активной маской и поздний Sheath в 02 остаются **NOT_TESTED в игре**. Следующий вопрос — принадлежность оставшейся геометрии на том же молоте. **Production BLOCKED**.
 
+[Визуальный состав 08](SCABBARD_VISUAL_INVENTORY_08.md): большой диск и корпус соответствуют форме A; B — отдельная короткая накладка, её видимый вклад не изолирован. Запись в A/B **BLOCKED** до проверки отдельного harness.
+
 ## Организация
 
 - GitHub: [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards), default main; topics game-asterigos, nikichmods-mod.
