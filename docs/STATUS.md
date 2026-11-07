@@ -24,7 +24,7 @@
 
 [scabbard-asset-census-01](SCABBARD_ASSET_CENSUS_11.md#игровой-результат-2026-11-07) — **PASS** для read-only снимка обычного молота. Помимо трёх контролей найдены три прикреплённых кандидата: spear unuse, staff sheath и dual unuse. Соответствие остаточной геометрии и production остаются **BLOCKED**.
 
-[scabbard-residual-isolation-01](SCABBARD_RESIDUAL_ISOLATION_12.md) **READY офлайн, NOT_TESTED в игре**. Три кандидата проверяются по одному поверх неизменно скрытой базы. Перед первым изменением флагов обязателен live preflight шести целей. Тест не установлен.
+[scabbard-residual-isolation-01](SCABBARD_RESIDUAL_ISOLATION_12.md#повторный-сеанс--pass-для-поочерёдной-изоляции) — **PASS** для трёх одиночных изоляций при скрытой базе и штатного финального восстановления. Пользователь подтвердил визуальный вклад всех трёх дополнительных компонентов. Полное одновременное скрытие шести и production остаются непроверенными.
 
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
