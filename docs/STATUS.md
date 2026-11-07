@@ -22,7 +22,7 @@
 
 ## Текущий следующий шаг
 
-**Офлайн-анализ завершён.** [Проверка остаточной геометрии](SCABBARD_COMBINED_VISIBILITY_10.md#адресная-офлайн-проверка-остатка) сузила кандидатов, но не привязала три остаточные детали к live примитивам. Набор из трёх целей сохраняется. Дальнейшее решение зависит от одного синхронного наблюдения видимых примитивов в том же combined-stowed.
+[scabbard-asset-census-01](SCABBARD_ASSET_CENSUS_11.md) **READY офлайн, NOT_TESTED в игре**. Один снимок проверит живые компоненты по 15 точным stock asset paths, разделяя три известных цели, новые привязанные кандидаты, посторонние и неопределённые экземпляры. Observer не установлен. Состав остатка и production остаются **BLOCKED**.
 
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
