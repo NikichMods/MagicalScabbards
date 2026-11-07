@@ -23,7 +23,7 @@
 
 [Cooperative-cudgel-01](https://github.com/NikichMods/MagicalScabbards/blob/1b4d36f61836900a8e81c18826259ed90da4777b/docs/RESEARCH_PLAN.md#результат-cooperative-cudgel-01--2026-11-07): ограниченный игровой write-test уже проведён. **Частичный runtime PASS**: hide после 2016 мс, ранний release до InHand, отмена pending hide подтверждены по логу. **Не принято:** видимое изменение комплекта (пользователь не заметил разницы), ручной STOP при active mask, обычная InHand атака и overlap раннего draw с поздним Sheath post. Источник `cooperative-cudgel-01` заморожен, не переписывать. **Production BLOCKED**.
 
-`cooperative-cudgel-02` подготовлен отдельно. **Offline PASS** для обычной InHand атаки, перекрытия draw/позднего Sheath, таймеров, guards и ручного STOP с активной маской. **Runtime NOT_TESTED** по всем пунктам 02, включая видимую геометрию и её восстановление. Следующий шаг после отдельного разрешения — [один игровой сеанс с видео до/после и STOP](RESEARCH_PLAN.md#один-игровой-сеанс-02-после-отдельного-разрешения). Pawn `scabbard_a/b` только read-only. **Production BLOCKED**.
+`cooperative-cudgel-02` — [игровой сеанс завершён](RESEARCH_PLAN.md#результат-игрового-сеанса-02--2026-11-07). **PASS** для hide через 2016 мс и ручного STOP с активной маской. По видео оранжевый нижний фрагмент исчезает и возвращается, основная деталь остаётся видимой. Обычная атака в руках, draw с активной маской и поздний Sheath в 02 остаются **NOT_TESTED в игре**. Следующий вопрос — принадлежность оставшейся геометрии на том же молоте. **Production BLOCKED**.
 
 ## Организация
 
