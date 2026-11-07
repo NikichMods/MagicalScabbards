@@ -1,32 +1,31 @@
 # MagicalScabbards — текущий статус
 
-**2026-11-06 · Research; production gate: BLOCKED.** Самостоятельный публичный репозиторий NikichMods/MagicalScabbards и организационный bootstrap готовы. Runtime production-кода, принятой тестовой версии, релиза и CI нет.
+**2026-11-07 · Research; production gate: BLOCKED.** Публичный проект и исследовательские ветки существуют; **принятого production runtime, установочной версии, CI и релиза нет**. Документационные результаты исследовательских веток допустимо отражать в `main`, но их экспериментальный Lua не является принятым runtime.
 
-## Новая принятая концепция — 2026-11-06
+## Цель и принятое поведение
 
-**Видимость всего убранного комплекта (ножны и оружие в них) зависит от оружия, а не боя.** Начало вынимания → **показать немедленно** и отменить pending hide; в руках/при убирании → видимо; `EquipModeChange(Sheath)` → запустить **таймер 2 секунды**, не скрывая сразу; по истечении → скрыть **только при повторно подтверждённом текущем stowed**. Требование точного сигнала конца stow-анимации отменено. Прежние правила «бой/вне боя» и 1,5 с после боя отменены. Канонический контракт: [REQUIREMENTS.md](REQUIREMENTS.md). Магический VFX — отдельный следующий этап после функциональной проверки.
+**Скрывать штатные ножны вместе с оружием в них только при устойчивом stowed; показывать немедленно при начале draw** с отменой pending hide. Во время drawn и stowing оставлять комплект видимым. После `EquipModeChange(Sheath)` запустить **одну отменяемую задержку 2 секунды**, затем скрыть только при повторной проверке текущих объектов и устойчивого stowed. **Боевой статус не управляет видимостью.** Не менять оружие в руках, анимации, механику, одежду, HUD или соседние моды. Короткий магический VFX — следующий этап после принятия функциональной механики. Канонические критерии: [REQUIREMENTS.md](REQUIREMENTS.md).
 
-## Доказано
+## Доказанные результаты и точные пределы
 
-- [Static 01](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): сравнение 15/15 ресурсов, No Scabbard = пустые SkeletalMesh, отдельные scabbard_a/b, штатные scabbard_on/off writers, составные *_sheath.
-- [Runtime 01](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md): владельцы и attachments на текущем pawn, новые экземпляры после load, разные состояния cudgel при том же значении battle. Запрос на ExecuteAction callback дал actions=0, что оставляет неизвестным фактический путь событий.
-- Общие факты промотированы в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/commit/577a4f6ea311b94f44df06456bd43f898e946f97).
+- [Static 01](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): сторонний No Scabbard заменяет **15/15** известных оригинальных weapon/scabbard ресурсов пустыми SkeletalMesh, включая `*_sheath`, `*_use/_unuse`, `hilda_scabbard_A/B`. Выявлены SCS/Blueprint attachments и writers; статическая замена не доказывает фактическое отображение конкретной детали в игре.
+- [Runtime 01](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md): реальные владельцы/attachments, новые экземпляры после reload, несовпадение battle и equip state; в одном снимке после reload `_Unuse` прикреплён к pawn, что требует проверки для остаточной геометрии, но **не доказывает** её принадлежность.
+- [Cooperative-cudgel-01/02](https://github.com/NikichMods/MagicalScabbards/blob/24c581305210260ae8e36ea0c4f172323b5312bc/docs/RESEARCH_PLAN.md): на обычном молоте частичный игровой PASS для hide после ~2016 мс, раннего release, отмены pending hide и ручного STOP с собственной маской. Одного `hilda_cudgel_sheath` визуально недостаточно. Обычные InHand-атаки и опасный overlap позднего Sheath post не получили полного игрового acceptance.
+- [Visual isolation A/B](https://github.com/NikichMods/MagicalScabbards/blob/9fc109cac79895e1ed0cd5fae0e2d71f79c2e49d/docs/SCABBARD_VISUAL_ISOLATION_AB_09.md): **PASS в игре** для поочерёдного hide/show `hilda_BP_C.scabbard_a/b`. A скрывает длинный диагональный корпус и кольцо, B — маленькую накладку; `hilda_cudgel_sheath` отдельно скрывает нижний выступ.
+- [Combined visibility 10](https://github.com/NikichMods/MagicalScabbards/blob/a8a76622888d0257e08e8442ffd80cdd5d93453b/docs/SCABBARD_COMBINED_VISIBILITY_10.md): **PASS в игре** для совместного скрытия `hilda_cudgel_sheath + scabbard_a + scabbard_b` и ручного восстановления B → A → sheath с `CLEANED owned=false`. Убранный held mesh оставался скрыт. На пояснице остались светящийся медальон и тёмные детали; их owner неизвестен. Сеанс **не проверял** поведение маски при draw/stow.
 
-## Блокеры до реализации
+## Открытые блокеры
 
-1. Ранний draw для поддерживаемых маршрутов: первый удар cudgel имеет кандидат `BeginDoSkill` pre, другие маршруты пока не покрыты.
-2. Независимая обратимая маска только подтверждённого `hilda_cudgel_sheath`: `bVisible` имеет штатного writer, пригодность `bHiddenInGame` и rollback не доказаны. Pawn `scabbard_a/b` не включать в первый тест по аналогии.
-3. Одноразовый 2-секундный таймер, отмена при draw/смене экипировки/lifecycle, повторная проверка pawn/actor/component/asset/socket перед hide и восстановление только собственной записи. **Точный конец stow-анимации не блокер.**
-4. Комплекты других семейств и проверка совместимости — отдельные этапы; VFX после функционального принятия.
+1. **Визуальный состав:** установить, является ли оставшийся медальон/тёмная геометрия частью убранного комплекта, и если да — exact owner/component/asset. Нельзя расширять список изменяемых компонентов по виду или имени.
+2. **Динамика/владение:** подтверждение раннего draw для поддерживаемых маршрутов, корректная обработка перекрывающихся skill/Sheath, вмешательства штатных writers, двухсекундной отмены и rollback только собственной записи, в том числе при lifecycle/reload. Изолированный ручной PASS не закрывает эти gates.
+3. **Поддерживаемый объём:** другие виды оружия, совместимость с CombatHUD/HildaSoftLight/косметическими модами и VFX проверяются после безопасного механизма для базового семейства.
 
-## Следующий шаг
+## Текущий следующий шаг
 
-[Cooperative-cudgel-01](https://github.com/NikichMods/MagicalScabbards/blob/1b4d36f61836900a8e81c18826259ed90da4777b/docs/RESEARCH_PLAN.md#результат-cooperative-cudgel-01--2026-11-07): ограниченный игровой write-test уже проведён. **Частичный runtime PASS**: hide после 2016 мс, ранний release до InHand, отмена pending hide подтверждены по логу. **Не принято:** видимое изменение комплекта (пользователь не заметил разницы), ручной STOP при active mask, обычная InHand атака и overlap раннего draw с поздним Sheath post. Источник `cooperative-cudgel-01` заморожен, не переписывать. **Production BLOCKED**.
+**Адресный offline-анализ остатка с помощью уже разобранного No Scabbard как справочного перечня из 15 заменённых ресурсов.** Проверить сохранённые кадры, проекции/LOD, точные owners и attachments, начиная с `hilda_cudgel_unuse` и других возможных вспомогательных акторов, и отдельно исключить геометрию одежды/CharacterMesh0. Пустой меш стороннего мода сам по себе **не** идентифицирует оставшиеся пиксели. Новые игровые записи/установка пакета/запуск игры не входят в этот этап. Если offline-доказательств недостаточно, определить один минимальный test gate, требующий отдельного разрешения.
 
-Следующий шаг: [CODEX_RESEARCH_TASK.md](CODEX_RESEARCH_TASK.md) — подготовить кандидат 02 с точечными исправлениями InHand skill/overlap, проверить offline стабы, затем только по отдельному разрешению сделать **сопоставимое визуальное «до/после» на одном stock cudgel** и проверить STOP при active mask. Pawn `scabbard_a/b` только read-only до отдельного gate. Не возвращаться к широкому native trace без новой конкретной причины.
+Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
-## Организация
+## Репозиторий
 
-- GitHub: [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards), default main; topics game-asterigos, nikichmods-mod.
-- Исходный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f); GitHub bootstrap: [5aab6683](https://github.com/NikichMods/MagicalScabbards/commit/5aab6683a9e9360070412d44e470282eb8710c97).
-- Общие доказательства живут в [едином Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md); архивные результаты static/runtime не изменены.
+[NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
