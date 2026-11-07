@@ -28,6 +28,8 @@
 
 [scabbard-dynamic-cudgel-01](SCABBARD_DYNAMIC_CUDGEL_13.md#игровой-сеанс-2026-11-07--pass-в-подтверждённом-наборе) — **PASS** для одновременного скрытия и восстановления шести целей, раннего draw, обычных атак в руках, задержки после Sheath, пропуска позднего Sheath и ручного STOP. Production **BLOCKED**. Отмена уже поставленного таймера — игровой PASS 2026-11-08. Повторный Sheath подтверждён в стабе.
 
+[scabbard-freeplay-01](SCABBARD_FREEPLAY_14.md) готов офлайн для свободной read-only диагностики, включая теневой таймер и границу смены экипировки. Автоматическая запись при свободной игре BLOCKED до подтверждения своевременного release.
+
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
 ## Репозиторий
