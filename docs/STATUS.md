@@ -22,7 +22,7 @@
 
 ## Текущий следующий шаг
 
-[scabbard-asset-census-01](SCABBARD_ASSET_CENSUS_11.md) **READY офлайн, NOT_TESTED в игре**. Один снимок проверит живые компоненты по 15 точным stock asset paths, разделяя три известных цели, новые привязанные кандидаты, посторонние и неопределённые экземпляры. Observer не установлен. Состав остатка и production остаются **BLOCKED**.
+[scabbard-asset-census-01](SCABBARD_ASSET_CENSUS_11.md#игровой-результат-2026-11-07) — **PASS** для read-only снимка обычного молота. Помимо трёх контролей найдены три прикреплённых кандидата: spear unuse, staff sheath и dual unuse. Соответствие остаточной геометрии и production остаются **BLOCKED**.
 
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
