@@ -21,8 +21,9 @@
 
 ## Текущие технические сведения
 
-- [Статический отчёт](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): No Scabbard заменяет 15 оригинальных ресурсов пустыми SkeletalMesh; у pawn есть отдельные scabbard_a/b, у экипировки — составные ресурсы с геометрией оружия. При подтверждении, что это убранный комплект, скрытие целого компонента допустимо.
-- [Runtime-отчёт](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md): подтверждены актуальные владельцы, пересоздание объектов при загрузке и несовпадение боевого статуса с положением оружия. Семантические стадии draw/stow и безопасное подавление видимости ещё не доказаны.
+- [Статический отчёт](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): сторонний No Scabbard заменяет 15 штатных ресурсов пустыми SkeletalMesh; это исследовательский ориентир, но не пригодный механизм обратимого hide/show.
+- [Runtime-отчёт](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md): подтверждены владельцы, пересоздание объектов при загрузке и независимость фактического положения оружия от battle getter.
+- [Последний игровой результат](https://github.com/NikichMods/MagicalScabbards/blob/a8a76622888d0257e08e8442ffd80cdd5d93453b/docs/SCABBARD_COMBINED_VISIBILITY_10.md): на обычном молоте **PASS** для совместного скрытия трёх деталей и ручного отката. Принадлежность оставшихся медальона/пластин неизвестна; полноценные переходы draw/stow ещё не приняты. Ближайшая задача — [адресная идентификация остатка](docs/RESEARCH_PLAN.md) с учётом всех замен No Scabbard.
 
 ## Документы
 
