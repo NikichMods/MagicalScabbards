@@ -40,6 +40,8 @@
 
 [scabbard-integrated-01](SCABBARD_INTEGRATED_18.md#игровой-сеанс-2026-11-08) подтвердил автоматический hide/show молота, быструю отмену, раздельный учёт RELEASED/RETIRED при двух сменах и чистый STOP. Посох и клинки оставались без своего hide после stow. Reload с этим кандидатом в игре не зафиксирован. Production gate остаётся BLOCKED.
 
+[scabbard-integrated-02](SCABBARD_INTEGRATED_19.md) готов офлайн к одному игровому прогону посоха и парных клинков. Они подключены к единому контроллеру через проверяемые class-specific события. Доставка новых переходов, видимость оружия в руках, reload и отсутствие остатков после смены с активной маской ожидают игрового подтверждения.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
