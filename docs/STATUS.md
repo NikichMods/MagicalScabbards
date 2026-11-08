@@ -44,6 +44,8 @@
 
 [scabbard-integrated-03](SCABBARD_INTEGRATED_20.md#игровой-сеанс-2026-11-08) подтвердил восстановление hide после первого draw/stow посоха при смене с клинками в руках. Единственная отклонённая цель при hide клинков — `hilda_staff_unuse`. Визуальная роль остатка и допуск к записи ещё открыты.
 
+**Дальнейшее направление: [Integrated 04](SCABBARD_INTEGRATED_21.md).** Приняты структурное покрытие всех 15 ресурсов, включение stowed FX/helpers по фактической роли (не слепо по *_use / *_unuse) и одноразовое восстановление после stock Sheath во время смены через меню. Отдельные визуальные A/B для каждого ресурса не нужны. Это решение о дизайне, а не принятый runtime: новая реализация и тесты ещё отсутствуют, production BLOCKED.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
