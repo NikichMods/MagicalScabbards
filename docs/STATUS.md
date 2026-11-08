@@ -34,7 +34,7 @@
 
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
-[scabbard-endplay-release-01](SCABBARD_ENDPLAY_RELEASE_16.md) прошёл офлайн-проверки. Запись ограничена двумя деталями самой Хильды при проверенной ручной постановке. Следующий результат зависит от синхронного readback на реальной смене слота. Автоматическое подавление и production остаются BLOCKED.
+[scabbard-endplay-release-01](SCABBARD_ENDPLAY_RELEASE_16.md#игровой-результат-2026-11-08) — игровой PASS для синхронного снятия двух масок на компонентах Хильды при смене молота на парные клинки. Уходящие компоненты были read-only и ещё разрешались после смены. Автоматическое подавление и production остаются BLOCKED.
 
 ## Репозиторий
 
