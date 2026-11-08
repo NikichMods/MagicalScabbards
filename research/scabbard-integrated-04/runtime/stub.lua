@@ -124,6 +124,7 @@ local function new()
             return s.components
         end
         if n=="HildaCudgel_BP_C" and s.noCudgel then return {} end
+        if s.noEquipment and n~="HUDMainUMG_BP_C" then return {} end
         return n == "HUDMainUMG_BP_C" and {hud} or actors[n]
     end
     env.IsKeyBindRegistered = function() return false end
@@ -516,6 +517,26 @@ assert(replacement.sheath.bVisible)
 swap.press(8)
 assert(swap.has("event=CLEANED"))
 
+local staleMenu=started()
+local nextStaff=staleMenu.addWeapon("HildaStaff_BP","staff","hilda_staff","scabbard_b",3710)
+nextStaff.equip(1)
+staleMenu.flush()
+nextStaff.held.GetAddress=function() return 7999 end
+staleMenu.fire(1)
+assert(#staleMenu.writes==0 and staleMenu.has("menu stowed identity changed"))
+staleMenu.press(8)
+
+local cancelMenu=started()
+local cancelStaff=cancelMenu.addWeapon("HildaStaff_BP","staff","hilda_staff","scabbard_b",3720)
+cancelStaff.equip(1)
+cancelMenu.flush()
+cancelMenu.draw("staff")
+assert(not cancelMenu.timers[1].live)
+cancelMenu.fire(1)
+assert(#cancelMenu.writes==0)
+cancelMenu.press(8)
+assert(cancelMenu.has("event=CLEANED"))
+
 local late=started()
 local lateStaff=late.addWeapon("HildaStaff_BP","staff","hilda_staff","scabbard_b",3800)
 late.draw("staff") -- no slot post or EndPlay refresh yet
@@ -525,16 +546,28 @@ assert(not lateStaff.sheath.bVisible)
 late.press(8)
 -- Empty catalogue must be valid; component names alone never authorize world writes.
 local empty=new()
+local inventory=empty.components
 empty.components={}
+empty.noEquipment=true
 empty.press(7)
-assert(empty.has("eligible=0") and #empty.writes==0)
+assert(empty.has("eligible=0") and empty.has("equipped_adapter=false") and #empty.writes==0)
+empty.noEquipment=false
+empty.components={inventory[1],inventory[2],inventory[3]}
+empty.slot(); empty.flush()
+suppress(empty)
+assert(empty.has("reason=sheath-delay targets=2") and not empty.main.bVisible)
+empty.draw(); empty.equip(0)
+empty.components=inventory
+empty.slot(); empty.flush()
+suppress(empty)
+assert(empty.has("reason=sheath-delay targets=6"))
 empty.press(8)
 assert(empty.has("event=CLEANED"))
 
 -- InHandEquipObjects names can denote a sheathed FX helper: position, not suffix, governs.
 local fx=started()
 local glowing=fx.addWeapon("HildaDual_Use_BP",nil,"hilda_dual_use","scabbard_b",3900)
-glowing.owner.equipMode=0
+glowing.owner.equipMode=1
 glowing.held.bVisible=true
 fx.slot(); fx.flush()
 suppress(fx)
@@ -551,11 +584,15 @@ groundPiece.GetOwner=function() return nil end
 groundPiece.GetAttachParent=function() return nil end
 local heldFx=ground.addWeapon("HildaStaff_Use_BP",nil,"hilda_staff_use","scabbard_b",4000)
 heldFx.held.bVisible=true
-heldFx.root.GetAttachSocketName=function() return name("staff_r_hand") end
+heldFx.root.GetAttachSocketName=function() return {ToString=function() return "staff_r_hand" end} end
+local inHand=ground.addWeapon("HildaDual_Use_BP",nil,"hilda_dual_use","scabbard_b",4100)
+inHand.owner.equipMode=0
+inHand.held.bVisible=true
 ground.slot(); ground.flush()
 suppress(ground)
 assert(groundPiece.bVisible,"unattached world asset must never be masked")
 assert(heldFx.held.bVisible,"hand-attached FX helper must never be masked")
+assert(inHand.held.bVisible and ground.has("reason=use-mode-mismatch"),"InHand helper at a scabbard socket must remain visible")
 ground.press(8)
 assert(ground.has("event=CLEANED"))
 print("PASS: research 04 structural roles, menu recovery, lifecycle, empty and world catalogue")

@@ -132,6 +132,7 @@ end
 local function detail(err) return string.format("%q",tostring(err)) end
 local function cancel(reason)
     token=token+1
+    pendingEquip=nil
     if not timer then return end
     local old=timer
     timer=nil
@@ -242,8 +243,7 @@ local function admitted(c,row,pawn,allowPost)
         if rule[4]=="attached-use" then
             -- Some Use helpers carry FX on the scabbard; class alone is not a held location.
             -- Their root must already pass the exact current-pawn scabbard attachment check.
-            if owner.equipMode~=0 and owner.equipMode~=1 and owner.equipMode~=2
-                and owner.equipMode~=4 then return false,"use-mode-mismatch" end
+            if owner.equipMode~=1 and owner.equipMode~=2 then return false,"use-mode-mismatch" end
         elseif owner.equipMode~=rule[4] and not (allowPost and anchor and row.owner==anchor.owner) then
             return false,"equip-mode-mismatch"
         end
@@ -519,9 +519,14 @@ local function armMenuSheath(actor,adapter)
     if not (valid(root) and id(root:GetOwner())==id(actor)
         and id(root:GetAttachParent())==id(mesh)
         and socket(root)==adapter.mount and visible(root)) then return false end
+    local ready,signature=pcall(stowed,pawn,mesh,actor,true)
+    if not ready then
+        log("SKIPPED_UNSAFE","MENU_SHEATH_GUARD","detail="..detail(signature))
+        return false
+    end
     cancel("menu-sheath-replace")
     local pending={owner=id(actor),path=path(actor),root=id(root),
-        generation=generation,adapter=adapter}
+        generation=generation,signature=signature}
     pendingEquip=pending
     local mine,session=token,epoch
     local handle=ExecuteInGameThreadWithDelay(2000,function()
@@ -541,6 +546,7 @@ local function armMenuSheath(actor,adapter)
             assert(row and row.adapter==adapter and row.root==pending.root,
                 "menu actor untracked after refresh")
             local signature=stowed(currentPawn,currentMesh,now,false)
+            assert(signature==pending.signature,"menu stowed identity changed")
             anchor=row
             local candidates=collect(currentPawn,currentMesh,"menu-expiry",false)
             apply(candidates,signature,"menu-sheath-delay")
@@ -771,8 +777,7 @@ RegisterEndPlayPreHook(function(param,reason)
         local destructionOK,destroying=pcall(function() return actor:IsActorBeingDestroyed() end)
         local destroyed=ok and code==0 and destructionOK and destroying==true
         ending[key]=true
-        if not pendingEquip or pendingEquip.owner==key then
-            pendingEquip=nil
+        if localPawn or not pendingEquip or pendingEquip.owner==key then
             cancel("end-play")
         end
         if call then call.foreign=true; fault=true end
