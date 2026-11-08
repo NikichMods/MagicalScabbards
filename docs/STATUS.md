@@ -42,6 +42,8 @@
 
 [scabbard-integrated-02](SCABBARD_INTEGRATED_19.md#игровой-сеанс-2026-11-08) подтвердил полный hide/show посоха и отмену таймера. У клинков Sheath и таймер сработали, но осталась видимая деталь. После смены с оружием в руках новый Sheath для hide не подтверждён. STOP чистый, reload не зафиксирован. Полное покрытие и production остаются BLOCKED.
 
+[scabbard-integrated-03](SCABBARD_INTEGRATED_20.md) исправляет два воспроизведённых пробела привязки адаптера и добавляет адресные отказы каталога и equip post. Меш остатка и причина конкретного игрового эпизода ещё требуют одного прогона.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
