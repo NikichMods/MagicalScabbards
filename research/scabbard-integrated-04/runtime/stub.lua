@@ -226,6 +226,11 @@ local function new()
             return c
         end
         local held=component("SkeletalMesh",heldAsset,index+2,false)
+        if className:match("_Use_BP$") or className:match("_Unuse_BP$") then
+            -- Helpers are independent actors, not a held weapon with a hand socket.
+            root.GetAttachSocketName=function() return name(mount) end
+            setter(held,className)
+        end
         local sheath
         if family then
             local resource="hilda_"..family.."_sheath"
@@ -525,10 +530,32 @@ empty.press(7)
 assert(empty.has("eligible=0") and #empty.writes==0)
 empty.press(8)
 assert(empty.has("event=CLEANED"))
+
+-- InHandEquipObjects names can denote a sheathed FX helper: position, not suffix, governs.
+local fx=started()
+local glowing=fx.addWeapon("HildaDual_Use_BP",nil,"hilda_dual_use","scabbard_b",3900)
+glowing.owner.equipMode=0
+glowing.held.bVisible=true
+fx.slot(); fx.flush()
+suppress(fx)
+assert(not glowing.held.bVisible,"stowed FX helper must be part of the mask")
+fx.draw()
+assert(glowing.held.bVisible,"FX helper must reappear with the draw")
+fx.press(8)
+assert(fx.has("event=CLEANED"))
+
+-- Same asset on the world or in a hand-socket must never pass local scabbard admission.
 local ground=started()
 local groundPiece=ground.addComponent("hilda_staff_unuse",false)
+groundPiece.GetOwner=function() return nil end
 groundPiece.GetAttachParent=function() return nil end
+local heldFx=ground.addWeapon("HildaStaff_Use_BP",nil,"hilda_staff_use","scabbard_b",4000)
+heldFx.held.bVisible=true
+heldFx.root.GetAttachSocketName=function() return name("staff_r_hand") end
+ground.slot(); ground.flush()
 suppress(ground)
 assert(groundPiece.bVisible,"unattached world asset must never be masked")
+assert(heldFx.held.bVisible,"hand-attached FX helper must never be masked")
 ground.press(8)
+assert(ground.has("event=CLEANED"))
 print("PASS: research 04 structural roles, menu recovery, lifecycle, empty and world catalogue")

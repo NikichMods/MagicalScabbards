@@ -447,7 +447,10 @@ local function watch(stage,param,value,propagation)
         local requested=value:get()
         if stage=="pre" then
             if (entry.sheath and requested~=true) or (not entry.sheath and requested~=false) then
-                cancel("stock-writer")
+                -- Teardown of the OLD weapon is expected during a new actor's menu Sheath.
+                if not pendingEquip or pendingEquip.owner==entry.actor.owner then
+                    cancel("stock-writer")
+                end
             end
             if entry.sheath then
                 entry.actor.pair=propagation:get()==false and {value=requested} or nil
