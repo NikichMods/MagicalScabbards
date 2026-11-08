@@ -34,6 +34,8 @@
 
 Метод и стоп-условия: [RESEARCH_PLAN.md](RESEARCH_PLAN.md). Исторические test-кандидаты и исходники остаются в `research/*`; не переписывать их frozen SHA. Общие переносимые открытия по Asterigos — в [Asterigos-Research](https://github.com/NikichMods/Asterigos-Research/blob/main/docs/RESEARCH_INDEX.md).
 
+[scabbard-endplay-release-01](SCABBARD_ENDPLAY_RELEASE_16.md) прошёл офлайн-проверки. Запись ограничена двумя деталями самой Хильды при проверенной ручной постановке. Следующий результат зависит от синхронного readback на реальной смене слота. Автоматическое подавление и production остаются BLOCKED.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
