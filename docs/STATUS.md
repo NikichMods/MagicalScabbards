@@ -38,6 +38,8 @@
 
 [scabbard-equipment-lifetime-01](SCABBARD_EQUIPMENT_LIFETIME_17.md#игровой-сеанс-2026-11-08) подтвердил уничтожение владельцев и замену обоих экземпляров при возврате молота в одном цикле. Старые компоненты ещё разрешались вне комплекта и сохраняли штатные значения флагов в снимках. Ранний release для уходящей экипировки ещё не доказан.
 
+[scabbard-integrated-01](SCABBARD_INTEGRATED_18.md) готов офлайн к свободному write-test в пределах stock-cudgel. Уходящие маски при подтверждённом уничтожении учитываются как RETIRED. Игровой PASS интеграции и production gate остаются открытыми.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
