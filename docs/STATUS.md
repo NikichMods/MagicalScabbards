@@ -36,6 +36,8 @@
 
 [scabbard-endplay-release-01](SCABBARD_ENDPLAY_RELEASE_16.md#игровой-результат-2026-11-08) — игровой PASS для синхронного снятия двух масок на компонентах Хильды при смене молота на парные клинки. Уходящие компоненты были read-only и ещё разрешались после смены. Автоматическое подавление и production остаются BLOCKED.
 
+[scabbard-equipment-lifetime-01](SCABBARD_EQUIPMENT_LIFETIME_17.md) подготовлен и проверен офлайн. Дальнейшая судьба и флаги двух уходящих экземпляров требуют игровых снимков после выдержки и обратной смены. Ранний release для уходящей экипировки ещё не доказан.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
