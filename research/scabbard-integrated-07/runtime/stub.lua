@@ -50,7 +50,8 @@ local function new()
     main.GetAttachSocketName = function() return name("None") end
     sheath.GetAttachSocketName = main.GetAttachSocketName
     local actors, objects = {HildaCudgel_BP_C={actor}}, {["/World/Cudgel"]=actor}
-    local weaponTypes={HildaShield_BP=0,HildaDualMain_BP=1,HildaCudgel_BP=2,HildaSpear_BP=3,HildaStaff_BP=4}
+    local weaponTypes={HildaShield_BP=0,HildaDualMain_BP=1,HildaCudgel_BP=2,HildaSpear_BP=3,
+        HildaStaff_BP=4,HildaBracelet_BP=5}
     local registered={[2]={[1]=actor}}
     s.slots={2,7}
     local global=obj("GameGlobal /Script/Genesis.Default__GameGlobal",998)
@@ -187,6 +188,7 @@ local function new()
             assert(propagate==false,"unexpected propagation")
             s.writes[#s.writes+1]=label..tostring(value)
             s.stock(part,value,false,s.noDelivery==label and value==false)
+            if s.afterWrite then s.afterWrite(value) end
             if s.failHide==label and not value then error("failed after hide") end
         end
     end
@@ -270,7 +272,7 @@ local function new()
             s.stock(held,mode==0)
             if sheath then s.stock(sheath,mode==1) end
             if blade then s.stock(blade,mode==3) end
-            s.equipHooks[className](param(owner),param(mode))
+            if s.equipHooks[className] then s.equipHooks[className](param(owner),param(mode)) end
             owner.equipMode=mode
             if weapon then
                 if mode==0 then s.hand=weapon elseif mode==1 and s.hand==weapon then s.hand=nil end
@@ -495,12 +497,22 @@ assert(not multi.A.bVisible and not multi.main.bVisible)
 multi.press(8)
 assert(multi.A.bVisible and multi.has("event=CLEANED"))
 
-local unsupported=started()
-local spear=unsupported.addWeapon("HildaSpear_BP","spear","hilda_spear","scabbard_a",3300)
-unsupported.slot(); unsupported.flush()
-unsupported.draw("spear"); spear.equip(0); spear.equip(1)
-assert(#unsupported.timers==0 and #unsupported.writes==0)
-unsupported.press(8)
+for _,route in ipairs({
+    {"HildaSpear_BP","spear","hilda_spear","hilda_spear_atk1_idle",3},
+    {"HildaShield_BP","shield","hilda_shield","hilda_shield_switch_enter",0},
+    {"HildaBracelet_BP",nil,"fixture-only","hilda_bracelet_atk1_ini",5},
+}) do
+    local unsupported=started()
+    local weapon=unsupported.addWeapon(route[1],route[2],route[3],"scabbard_a",3300)
+    unsupported.slot(); unsupported.flush()
+    unsupported.draw(nil,route[4]); weapon.equip(0); weapon.equip(1)
+    assert(#unsupported.timers==0 and #unsupported.writes==0 and unsupported.has("event=DRAW_CANDIDATE"))
+    unsupported.draw(); unsupported.equip(0); unsupported.equip(1)
+    unsupported.fire(1)
+    assert(#unsupported.writes==0 and unsupported.has("selected weapon route unverified: "..route[5]))
+    unsupported.press(8)
+    assert(unsupported.has("event=CLEANED"))
+end
 
 local residual=started()
 local extra=residual.addWeapon("HildaStaff_Unuse_BP",nil,"hilda_staff_unuse","scabbard_b",3400)
@@ -835,4 +847,48 @@ assert(#noOff.writes==0 and noOff.has("event=SHEATH_TIMEOUT"),
     "a permanently incomplete kit must never be hidden")
 noOff.press(8)
 
-print("PASS: research 07 companion-independent Sheath intake, native guarded hide and inherited checks")
+local function registryRace(changeAfterHide)
+    local race=started()
+    race.addWeapon("HildaStaff_BP","staff","hilda_staff","scabbard_b",7100)
+    race.slot(); race.flush()
+    race.equip(1)
+    race.afterWrite=function(value)
+        if value~=changeAfterHide then
+            race.afterWrite=nil
+            race.slots[2]=7 -- Still a valid stowed registry, with a different selection.
+        end
+    end
+    race.fire(1)
+    assert(race.has("equipment registry identity changed before write") and not race.has("event=HIDDEN"),
+        table.concat(race.logs))
+    assert(race.A.bVisible and race.B.bVisible and race.sheath.bVisible)
+    if not changeAfterHide then assert(#race.writes==1,"same-value probe only") end
+    race.press(8)
+    assert(race.has("event=CLEANED"))
+end
+registryRace(false)
+registryRace(true)
+
+local lateComponent=started()
+local lateStaffComponent=lateComponent.addWeapon("HildaStaff_BP","staff","hilda_staff","scabbard_b",7200)
+lateComponent.slot(); lateComponent.flush()
+lateComponent.equip(1)
+lateStaffComponent.owner.SkeletalMesh=nil
+lateComponent.fire(1)
+assert(lateComponent.has("reason=selected-components-pending") and #lateComponent.writes==0)
+lateStaffComponent.owner.SkeletalMesh=lateStaffComponent.held
+lateComponent.fire(2)
+assert(lateComponent.has("event=HIDDEN") and not lateComponent.sheath.bVisible)
+lateComponent.press(8)
+assert(lateComponent.has("event=CLEANED"))
+
+local menuDuringDraw=started()
+local newStaff=menuDuringDraw.addWeapon("HildaStaff_BP","staff","hilda_staff","scabbard_b",7300)
+menuDuringDraw.draw()
+newStaff.equip(1)
+menuDuringDraw.flush()
+assert(#menuDuringDraw.timers==0 and #menuDuringDraw.writes==0,"untracked menu Sheath bypassed draw latch")
+menuDuringDraw.press(8)
+assert(menuDuringDraw.has("event=CLEANED"))
+
+print("PASS: research 07 Sheath intake, bounded retries, registry races, six-family routes and rollback")

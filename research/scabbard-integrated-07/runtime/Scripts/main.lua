@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: MPL-2.0
--- Integrated 07 RESEARCH DRAFT (NOT EXECUTED). One stock Sheath event; native registry proves the full kit before any write.
+-- Integrated 07 research. One stock Sheath event; native registry proves the full kit before any write.
 local ITEM = "/Game/MainContent/Act/Item_BP/"
 local MESH = "SkeletalMesh /Game/MainContent/Assets/creature/03_weapon/"
 local PAWN = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_BP.hilda_BP_C"
@@ -81,18 +81,25 @@ local SLOT = PAWN:match("^[^ ]+ (.+)$")
 local adapters = {
     HildaCudgel_BP={weapon=2, family="cudgel", mount="scabbard_a", held="hilda_cudgel"},
     HildaStaff_BP={weapon=4, family="staff", mount="scabbard_b", held="hilda_staff", switchSkill="hilda_staff_atk1"},
-    HildaDualMain_BP={weapon=1, family="dual", mount="scabbard_b", held="hilda_dualmain_mesh", off=true},
-    HildaDualOff_BP={weapon=1, held="hilda_dualoff_mesh"},
+    HildaDualMain_BP={weapon=1, family="dual", mount="scabbard_b", held="hilda_dualmain_mesh", blade="hilda_dualblade_mesh", required=true},
+    HildaDualOff_BP={weapon=1, held="hilda_dualoff_mesh", detachedStowed=true, required=true},
     HildaSpear_BP={weapon=3, held="hilda_spear"},
     HildaShield_BP={weapon=0, held="hilda_shield"},
 }
 local stockClass = {}
+local requiredActors = {}
+local writeWeapon = {}
 local drawClass = {}
 local drawSignals = {}
 for n,adapter in pairs(adapters) do
     adapter.event=bp(n)..":EquipModeChange"
     stockClass["BlueprintGeneratedClass "..bp(n)]=adapter
+    if adapter.required then
+        requiredActors[adapter.weapon]=requiredActors[adapter.weapon] or {}
+        requiredActors[adapter.weapon][adapter]=true
+    end
     if adapter.family then
+        writeWeapon[adapter.weapon]=true
         drawClass[adapter.family]=n.."_C"
         drawSignals["hilda_"..adapter.family.."_atk1_idle"]=adapter.family
         if adapter.switchSkill then drawSignals[adapter.switchSkill]=adapter.family end
@@ -170,7 +177,7 @@ end
 local function bindActor(actor,adapter,previous)
     local key=id(actor)
     local row={owner=key,path=path(actor),adapter=adapter,root=id(actor.RootComponent),held=id(actor.SkeletalMesh)}
-    if adapter.off then row.blade=id(actor.hilda_dualblade_mesh) end
+    if adapter.blade then row.blade=id(actor[adapter.blade]) end
     if adapter.family then row.sheath=id(actor["hilda_"..adapter.family.."_sheath"]) end
     if previous and previous.owner==key and previous.path==row.path and previous.adapter==adapter
         and previous.root==row.root and previous.held==row.held
@@ -208,12 +215,13 @@ local function stowed(pawn,mesh,actor,post)
     -- Capture the emitting stock actor only. A companion can legitimately
     -- appear after this Sheath event; native registry validation in canHideNow
     -- proves every selected held component before a write, not at event intake.
-    local ids={id(actor),id(root),id(held),id(sheath)}
-    if adapter.off then
-        local blade=actor.hilda_dualblade_mesh
-        assert(meshOnRoot(blade,actor,root,"hilda_dualblade_mesh") and blade.bVisible==false,
-            "main blade not stowed")
+    local ids={id(actor),id(root),id(held),id(held.SkeletalMesh),id(sheath),id(sheath.SkeletalMesh)}
+    if adapter.blade then
+        local blade=actor[adapter.blade]
+        assert(meshOnRoot(blade,actor,root,adapter.blade) and blade.bVisible==false,
+            "extra held mesh not stowed")
         ids[#ids+1]=id(blade)
+        ids[#ids+1]=id(blade.SkeletalMesh)
     end
     return table.concat(ids,"|")
 end
@@ -225,48 +233,56 @@ local function canHideNow(pawn,mesh,actor,signature,previous)
     assert(name(global)=="GameGlobal /Script/Genesis.Default__GameGlobal","equipment getters unavailable")
     local hand=global:GetInHandWeaponType(pawn)
     assert(math.type(hand)=="integer" and (hand>=0 and hand<=5 or hand==7),"invalid hand enum")
-    local selected, found={},false
+    local selected, registry={},{}
+    local anchorId=id(actor)
     for slot=0,1 do
         local weapon=global:GetInUseWeaponType(pawn,slot)
         assert(math.type(weapon)=="integer" and (weapon>=0 and weapon<=5 or weapon==7),"invalid slot enum")
         if weapon~=7 then
-            local count=0
-            local dualMain,dualOff=false,false
+            assert(writeWeapon[weapon],"selected weapon route unverified: "..weapon)
+            local present={}
             for handSlot=0,1 do
                 local item=global:GetWeaponObject(pawn,weapon,handSlot)
                 if valid(item) then
                     local adapter=stockClass[class(item)]
                     assert(adapter and adapter.weapon==weapon and equipmentActor(item,pawn),"unverified selected actor")
                     selected[id(item)]=item
-                    count=count+1
-                    dualMain=dualMain or adapter==adapters.HildaDualMain_BP
-                    dualOff=dualOff or adapter==adapters.HildaDualOff_BP
-                    if id(item)==id(actor) then found=true end
+                    present[adapter]=true
+                    registry[#registry+1]=table.concat({slot,weapon,handSlot,id(item)}, "|")
                 end
             end
-            if count==0 or (weapon==1 and not (dualMain and dualOff)) then return false,"slot-objects-pending" end
+            if not next(present) then return false,"slot-objects-pending" end
+            for role in pairs(requiredActors[weapon] or {}) do
+                if not present[role] then return false,"slot-objects-pending" end
+            end
         end
     end
-    if not found then return false,"sheath-actor-not-selected" end
+    if not selected[anchorId] then return false,"sheath-actor-not-selected" end
     if hand~=7 then return false,"native-hand-active" end
     for _,item in pairs(selected) do
         local adapter=stockClass[class(item)]
         local root,held=item.RootComponent,item.SkeletalMesh
+        local blade=adapter.blade and item[adapter.blade]
+        if not valid(root) or not valid(held) or (adapter.blade and not valid(blade)) then
+            return false,"selected-components-pending"
+        end
         assert(valid(root) and id(root:GetOwner())==id(item)
             and meshOnRoot(held,item,root,adapter.held)
             and type(held.bVisible)=="boolean" and type(held.bHiddenInGame)=="boolean",
             "selected held identity unavailable")
-        if adapter~=adapters.HildaDualOff_BP and id(root:GetAttachParent())~=id(mesh) then
+        if not adapter.detachedStowed and id(root:GetAttachParent())~=id(mesh) then
             return false,"selected-root-not-attached"
         end
-        local blade=adapter.off and item.hilda_dualblade_mesh
-        if adapter.off then
-            assert(meshOnRoot(blade,item,root,"hilda_dualblade_mesh")
+        if adapter.mount and socket(root)~=adapter.mount then return false,"selected-mount-not-stowed" end
+        if adapter.blade then
+            assert(meshOnRoot(blade,item,root,adapter.blade)
                 and type(blade.bVisible)=="boolean" and type(blade.bHiddenInGame)=="boolean","selected blade identity unavailable")
         end
         if item.equipMode~=1 or visible(held) or (blade and visible(blade)) then
             return false,"selected-actor-not-stowed"
         end
+        registry[#registry+1]=table.concat({id(item),id(root),id(held),id(held.SkeletalMesh),
+            id(blade) or "", blade and id(blade.SkeletalMesh) or ""}, "|")
     end
     local function oldHeld(rows)
         for key,row in pairs(rows) do
@@ -278,8 +294,13 @@ local function canHideNow(pawn,mesh,actor,signature,previous)
                         assert(id(root)==row.root and id(old.SkeletalMesh)==row.held,"old held identity changed")
                         assert(valid(old.SkeletalMesh) and type(old.SkeletalMesh.bVisible)=="boolean"
                             and type(old.SkeletalMesh.bHiddenInGame)=="boolean","old held visibility unknown")
+                        local blade=row.adapter.blade and old[row.adapter.blade]
+                        if row.adapter.blade then
+                            assert(row.blade and id(blade)==row.blade and type(blade.bVisible)=="boolean"
+                                and type(blade.bHiddenInGame)=="boolean","old extra held identity changed")
+                        end
                         if old.bHidden~=true and (visible(old.SkeletalMesh)
-                            or (row.blade and visible(old.hilda_dualblade_mesh))) then return true end
+                            or (blade and visible(blade))) then return true end
                     end
                 end
             end
@@ -292,7 +313,8 @@ local function canHideNow(pawn,mesh,actor,signature,previous)
         return false,"skill-active"
     end
     assert(stowed(pawn,mesh,actor,false)==signature,"stowed identity changed")
-    return true
+    table.sort(registry)
+    return true,table.concat(registry,";")
 end
 local function admitted(c,row,pawn,allowPost)
     local rule=proof(row.resource)
@@ -414,7 +436,6 @@ local function release(reason, pawnOnly, keep)
 end
 local function pass(reason)
     state,suppression,transition="PASS-THROUGH",nil,false
-    pendingSheath=nil
     cancel(reason)
     release(reason)
 end
@@ -423,21 +444,24 @@ safeOwnership=function()
     for _, row in pairs(leases) do if row.uncertain or ending[row.owner] then return false end end
     return true
 end
-local function apply(candidates,signature,reason,previous)
-    assert(safeOwnership() and not drawPending and not transition,"write guard unavailable")
+local function apply(candidates,signature,reason,previous,registry,expectedToken)
+    local function verify()
+        assert(token==expectedToken,"hide invalidated")
+        local pawn,mesh=current()
+        local ready,result=canHideNow(pawn,mesh,StaticFindObject(anchor.path),signature,previous)
+        assert(ready,"equipment changed before write: "..tostring(result))
+        assert(result==registry and token==expectedToken,"equipment registry identity changed before write")
+    end
     for key,row in pairs(candidates) do
         if not leases[key] then
             local c=checked(row)
             if visible(c) then
                 local ok,err=pcall(function()
-                    local pawn,mesh=current()
-                    local ready,why=canHideNow(pawn,mesh,StaticFindObject(anchor.path),signature,previous)
-                    assert(ready,"equipment changed before probe: "..tostring(why))
+                    verify()
                     write(row,true,"probe")
-                    pawn,mesh=current()
-                    ready,why=canHideNow(pawn,mesh,StaticFindObject(anchor.path),signature,previous)
-                    assert(ready and not transition,"equipment changed after probe: "..tostring(why))
+                    verify()
                     write(row,false,"hide")
+                    assert(token==expectedToken,"hide invalidated during write")
                     log("PASS","MASK_APPLIED","asset="..row.resource.." identity="..detail(key))
                 end)
                 if not ok then
@@ -449,6 +473,7 @@ local function apply(candidates,signature,reason,previous)
             end
         end
     end
+    verify()
     state,suppression="SUPPRESSED",signature
     local count=0
     for _ in pairs(leases) do count=count+1 end
@@ -483,25 +508,27 @@ local function schedule(actor,signature,keys,menu)
             local adapter=assert(stockClass[class(item)],"sheath class changed")
             assert(id(item.RootComponent)==pending.root and id(item.SkeletalMesh)==pending.held
                 and id(item["hilda_"..adapter.family.."_sheath"])==pending.sheath,"stowed identity changed")
-            local ready,reason=canHideNow(pawn,mesh,item,pending.signature,pending.previous)
+            local ready,result=canHideNow(pawn,mesh,item,pending.signature,pending.previous)
             if not ready then
                 if pending.remaining==0 then
                     cancel("sheath-timeout")
-                    log("SKIPPED_UNSAFE","SHEATH_TIMEOUT","reason="..reason)
+                    log("SKIPPED_UNSAFE","SHEATH_TIMEOUT","reason="..result)
                     return
                 end
                 pending.remaining=pending.remaining-1
                 arm(250)
-                if pending.lastReason~=reason then log("OBSERVED_ONLY","SHEATH_WAIT","reason="..reason) end
-                pending.lastReason=reason
+                if pending.lastReason~=result then log("OBSERVED_ONLY","SHEATH_WAIT","reason="..result) end
+                pending.lastReason=result
                 return
             end
             anchor=assert(actors[pending.owner],"sheath actor untracked")
             local candidates,latest=collect(pawn,mesh,"expiry",false)
             assert(not pending.keys or latest==pending.keys,"target generation changed")
-            assert(canHideNow(pawn,mesh,item,pending.signature,pending.previous),"equipment changed during catalogue")
-            pendingSheath=nil
-            apply(candidates,pending.signature,menu and "menu-sheath-delay" or "sheath-delay",pending.previous)
+            local stillReady,registry=canHideNow(pawn,mesh,item,pending.signature,pending.previous)
+            assert(stillReady and registry==result and token==mine,"equipment changed during catalogue")
+            apply(candidates,pending.signature,menu and "menu-sheath-delay" or "sheath-delay",
+                pending.previous,registry,mine)
+            if pendingSheath==pending then pendingSheath=nil end
         end) then pass("expiry-guard") end
     end
     arm=function(delay)
@@ -587,6 +614,31 @@ local function watch(stage,param,value,propagation)
         log("FAIL","WRITER_GUARD","detail="..detail(err))
     end
 end
+local observedSkills = {
+    hilda_shield_slash_idle=0, hilda_shield_switch_enter=0,
+    hilda_spear_atk1_idle=3, hilda_spear_switch_enter=3,
+    hilda_bracelet_atk1_ini=5, hilda_bracelet_switch_enter=5,
+}
+local function observeUnsupportedDraw(pawn,mesh,skill,weapon)
+    local global=StaticFindObject("/Script/Genesis.Default__GameGlobal")
+    assert(name(global)=="GameGlobal /Script/Genesis.Default__GameGlobal","equipment getters unavailable")
+    for slot=0,1 do
+        local actor=global:GetWeaponObject(pawn,weapon,slot)
+        if equipmentActor(actor,pawn) then
+            local root=actor.RootComponent
+            local held=actor.SkeletalMesh
+            log("OBSERVED_ONLY","DRAW_CANDIDATE","skill="..skill.." slot="..slot
+                .." class="..detail(class(actor)).." mode="..tostring(actor.equipMode)
+                .." mount="..detail(valid(root) and socket(root))
+                .." pawn_mesh_parent="..tostring(valid(root) and id(root:GetAttachParent())==id(mesh))
+                .." mesh="..detail(valid(held) and name(held.SkeletalMesh))
+                .." held_visible="..tostring(valid(held) and held.bVisible)
+                .." held_hidden="..tostring(valid(held) and held.bHiddenInGame))
+        else
+            log("OBSERVED_ONLY","DRAW_CANDIDATE","skill="..skill.." slot="..slot.." local_actor=false")
+        end
+    end
+end
 local function draw(param)
     local anim=param:get()
     if not (class(anim) or ""):match("%.hilda_AnimBP_C$") then return end
@@ -631,9 +683,13 @@ local function draw(param)
     clearPairs()
     pass("local-skill-pre")
     log("OBSERVED_ONLY","SKILL_PRE","skill="..skill)
+    if observedSkills[skill] then
+        local ok,err=pcall(observeUnsupportedDraw,pawn,mesh,skill,observedSkills[skill])
+        if not ok then log("OBSERVED_ONLY","DRAW_CANDIDATE_UNAVAILABLE","detail="..detail(err)) end
+    end
 end
 local function armMenuSheath(actor,adapter)
-    if not adapter.family or not bound then return false end
+    if not adapter.family or not bound or drawPending then return false end
     local pawn,mesh=current()
     local ready,signature=pcall(stowed,pawn,mesh,actor,true)
     if not ready then
@@ -701,7 +757,7 @@ local function equip(adapter,param,modeParam)
         return
     end
     if drawPending or transition or not (seen and seen.post and seen.value==true) then
-        if mode==1 and transition and not drawPending and armMenuSheath(actor,adapter) then
+        if transition and armMenuSheath(actor,adapter) then
             reject("menu-sheath-pending")
         else
             cancel("unconfirmed-sheath")
@@ -765,7 +821,8 @@ local function refresh(stage, expectedPawn)
         pendingSheath.refreshed=true
     end
     if state=="SUPPRESSED" then
-        local checkedState,ready=pcall(canHideNow,pawn,mesh,actor,suppression,oldActors)
+        local expectedToken=token
+        local checkedState,ready,registry=pcall(canHideNow,pawn,mesh,actor,suppression,oldActors)
         if checkedState and ready then
             for key,row in pairs(leases) do
                 if candidates[key] then
@@ -777,7 +834,10 @@ local function refresh(stage, expectedPawn)
                 end
             end
             release(stage,false,candidates)
-            if safeOwnership() then apply(candidates,suppression,stage,oldActors); return end
+            if safeOwnership() and token==expectedToken then
+                apply(candidates,suppression,stage,oldActors,registry,expectedToken)
+                return
+            end
         end
         pass("stowed-not-retained")
     end
