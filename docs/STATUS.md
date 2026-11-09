@@ -48,6 +48,8 @@
 
 [scabbard-integrated-05](SCABBARD_INTEGRATED_22.md#игровой-сеанс-2026-11-09) — игровой PASS переключения молот → посох кнопками и STOP. Клинки → посох через меню без атаки остался FAIL: ожидание пережило дедлайн, но скрытие после следующего EndPlay не выполнено. Production остаётся BLOCKED.
 
+[Integrated 06](SCABBARD_INTEGRATED_23.md) готов офлайн к одному игровому прогону. Проверку готовности перевели на штатные getters выбранных слотов, точных акторов и состояния рук. Временные переходы проверяются ограниченным one-shot polling. Runtime-доставка getters и hide после смены через меню ещё открыты.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
