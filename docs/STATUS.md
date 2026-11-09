@@ -50,6 +50,9 @@
 
 [Integrated 06](SCABBARD_INTEGRATED_23.md#игровой-сеанс-2026-11-09) — игровой PASS для клинки → посох через меню без атаки, молот → посох второй кнопкой и чистого STOP. Штатные getters сработали в проверенном наборе. Обратная смена на клинки с поздним появлением второй руки осталась без автоматического hide. Production остаётся BLOCKED.
 
+
+[Integrated 07](SCABBARD_INTEGRATED_24.md) — исследовательский **неисполнявшийся** здесь кандидат: запуск Sheath отвязан от обязательного наличия второй руки, но native completeness остаётся обязательной до записи. Изменённый apply повторно проверяет equipment до каждой записи. Статические проверки PASS; Lua 5.4, новое игровое испытание и остальные три семейства **BLOCKED**.
+
 ## Репозиторий
 
 [NikichMods/MagicalScabbards](https://github.com/NikichMods/MagicalScabbards); стабильный контракт — `main`, непроверенный runtime — `research/*` / `dev/*`. Первоначальный bootstrap: [6e8062ca](https://github.com/NikichMods/MagicalScabbards/commit/6e8062ca782f2fa72f058a949e7b1e62fc8a052f).
