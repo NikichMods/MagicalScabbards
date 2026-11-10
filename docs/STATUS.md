@@ -19,7 +19,7 @@
 
 ## Доказанные результаты и точные пределы
 
-**Bracer 01:** Lua 5.4 PASS для базового stowed-адаптера с видимым браслетом вне каталога целей. Оба порядка Bracer + ShieldSword ожидают адресной игровой проверки. [Результат и сценарий](SCABBARD_RECONCILE_BRACER_01.md)
+**Bracer 01:** Lua 5.4 PASS. В игре окно созрело, но все попытки hide заблокированы видимым локальным браслетом вне selected registry. Записей видимости не было. Точная identity блокирующего экземпляра открыта. [Игровой результат](SCABBARD_RECONCILE_BRACER_01.md#игровой-сеанс-2026-11-10)
 
 - [Static 01](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): сторонний No Scabbard заменяет **15/15** известных оригинальных weapon/scabbard ресурсов пустыми SkeletalMesh, включая `*_sheath`, `*_use/_unuse`, `hilda_scabbard_A/B`. Выявлены SCS/Blueprint attachments и writers; статическая замена не доказывает фактическое отображение конкретной детали в игре.
 - [Runtime 01](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md): реальные владельцы/attachments, новые экземпляры после reload, несовпадение battle и equip state; в одном снимке после reload `_Unuse` прикреплён к pawn, что требует проверки для остаточной геометрии, но **не доказывает** её принадлежность.
