@@ -24,6 +24,8 @@
 
 [Игровой сеанс Bracer 01](SCABBARD_RECONCILE_BRACER_01.md#игровой-сеанс-2026-11-10) подтвердил созревание окна и 22 отказа outgoing guard до записи. Причина в общем whitelist: `outgoing.lua` считает `HildaBracelet_BP.SkeletalMesh=hilda_bracelet` опасным локальным outgoing held, хотя штатный видимый браслет на запястье не относится к ножнам. **Решение:** не углубляться автоматически в identity-исследование второго браслета; сначала исключить этот известный wrist-only stock asset из **класса препятствий для скрытия ножен** (но не из native snapshot и проверки фазы Bracer). Оставить весь прочий outgoing guard, selected identity, admission/lease, generic draw release и 3000 мс неизменными. Проверить Lua-сценарий с видимым `hilda_bracelet` вне selected и сохранение `BLOCKED` для видимого уходящего молота/меча/щита, а также отказ для неоднозначного настоящего оружия. Затем один короткий игровой Bracer + ShieldSword hide/draw/STOP; не повторять другие четыре принятых комплекта. Если после исправления обнаружится независимый блокер, диагностировать его отдельно, а не объявлять отсутствие ножен у Bracer технической проблемой.
 
+**Текущий gate Bracer:** [Bracer 02](SCABBARD_RECONCILE_BRACER_02.md#короткий-игровой-gate) прошёл Lua 5.4. Следующий шаг — один короткий hide/draw/STOP на Bracer + ShieldSword после отдельного разрешения на установку.
+
 ## История и повторное использование
 
 - [Визуальный A/B](SCABBARD_VISUAL_ISOLATION_AB_09.md), [состав шести целей](SCABBARD_RESIDUAL_ISOLATION_12.md), [динамика молота](SCABBARD_DYNAMIC_CUDGEL_13.md), [граница EndPlay](SCABBARD_ENDPLAY_RELEASE_16.md) и [жизненный цикл экипировки](SCABBARD_EQUIPMENT_LIFETIME_17.md) сохраняют доказательства своих наборов.

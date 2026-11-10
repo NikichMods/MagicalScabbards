@@ -19,6 +19,8 @@
 
 ## Доказанные результаты и точные пределы
 
+**Bracer 02:** Lua 5.4 PASS для узкого исключения штатного wrist-only asset из outgoing препятствий. Ждёт адресной игровой проверки. [Результат и сценарий](SCABBARD_RECONCILE_BRACER_02.md)
+
 **Bracer 01:** Lua 5.4 PASS; в игре окно созрело, но 22 попытки hide остановлены outgoing guard на видимом `hilda_bracelet` вне selected registry, без записи видимости. **Диагноз по коду:** whitelist outgoing guard ошибочно относит штатный браслет на запястье к предметам, из-за которых ножны должны оставаться видимыми. Точная identity второго экземпляра в журнале неизвестна, но для определения роли wrist-asset в охране ножен это не обязательное условие. Следующий шаг — узкое исправление области действия guard, сохранив защиту для настоящего уходящего оружия. Исторический FAIL Bracer 01 не изменяется. [Игровой результат](SCABBARD_RECONCILE_BRACER_01.md#игровой-сеанс-2026-11-10)
 
 - [Static 01](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): сторонний No Scabbard заменяет **15/15** известных оригинальных weapon/scabbard ресурсов пустыми SkeletalMesh, включая `*_sheath`, `*_use/_unuse`, `hilda_scabbard_A/B`. Выявлены SCS/Blueprint attachments и writers; статическая замена не доказывает фактическое отображение конкретной детали в игре.
