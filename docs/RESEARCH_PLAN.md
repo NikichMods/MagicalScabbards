@@ -1,6 +1,6 @@
 # MagicalScabbards — актуальный исследовательский план
 
-**2026-11-09 · Research-only; production gate BLOCKED.** Принятые продуктовые требования — в [REQUIREMENTS.md](REQUIREMENTS.md).
+**2026-11-17 · Переход к dev-кандидату; production gate BLOCKED.** Принятые требования — в [REQUIREMENTS.md](REQUIREMENTS.md). Каноническая сводка игровых результатов и необходимых production-gates — [RELEASE_READINESS.md](RELEASE_READINESS.md). Продолжать в `dev/release-prep-01`, исходники исторических кандидатов не менять.
 
 ## Что уже установлено — не повторять
 
@@ -10,13 +10,17 @@
 - [A/B изоляция](https://github.com/NikichMods/MagicalScabbards/blob/9fc109cac79895e1ed0cd5fae0e2d71f79c2e49d/docs/SCABBARD_VISUAL_ISOLATION_AB_09.md): `scabbard_a` даёт длинный диагональный корпус и кольцо, `scabbard_b` — небольшую накладку; `hilda_cudgel_sheath` отвечает за нижний выступ.
 - [Совместное скрытие 10](https://github.com/NikichMods/MagicalScabbards/blob/a8a76622888d0257e08e8442ffd80cdd5d93453b/docs/SCABBARD_COMBINED_VISIBILITY_10.md): `hilda_cudgel_sheath + scabbard_a + scabbard_b` одновременно скрываются и вручную восстанавливаются (**PASS в игре**); остаются светящийся медальон и тёмные детали на пояснице. Их owner/назначение ещё неизвестны.
 
-## Следующий игровой gate
+## Следующий этап: один устанавливаемый dev-кандидат
+
+Выбрана единая доказанная основа `research/scabbard-reconcile-bracer-03/Scripts/*.lua`; её ядро reconcile/visibility побайтно совпадает с Universal 01. **Не создавайте Bracer 04 и не повторяйте весь шестисемейный прогон.** Выполнить конкретные production-start/stop, поддерживаемые логи, воспроизводимую упаковку, офлайн-regression и одну новую игровую приёмку только поставляемого кандидата, согласно [RELEASE_READINESS.md](RELEASE_READINESS.md).
+
+## Ранее выполненные игровые gates
 
 [Первый read-only сеанс State Reconcile 01](SCABBARD_STATE_RECONCILE_01.md#игровой-сеанс-2026-11-09) подтвердил политику времени и переходы native hand на всех шести семействах. [Boundary 01](SCABBARD_RECONCILE_BOUNDARY_02.md#игровой-сеанс-boundary-01) сопоставил generic pre с кадрами двух обычных draw молота и показал BLOCKED → CLEAR при смене на клинки.
 
 Два [игровых сеанса Write 02](SCABBARD_RECONCILE_WRITE_02.md#игровой-сеанс-2026-11-10) остаются baseline для владения масками. [Объединённый сеанс Universal 01](SCABBARD_RECONCILE_UNIVERSAL_01.md#игровой-сеанс-2026-11-10) завершён с PASS для наблюдавшихся четырёх комплектов пяти семейств, смен, reload и STOP под маской. Для полного покрытия остаётся определить stowed и визуальную роль браслетов. Повтор уже пройденных маршрутов без конкретного основания не требуется.
 
-## Следующий этап: проверить соразмерность двух UX-улучшений (2026-11-10)
+## Отложенные необязательные UX-улучшения (история решения 2026-11-10)
 
 В REQUIREMENTS.md определены **необязательные** пожелания: при Bracer + ShieldSword отличать фактическое использование браслетов от draw меча; при menu-swap по возможности сохранять скрытое состояние и уже идущий таймер. Принятое Universal 01 работает по общему BeginDoSkill и сбрасывает окно при смене identity; это допустимый baseline, не новый FAIL.
 
