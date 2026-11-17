@@ -28,5 +28,7 @@
 
 ## История и повторное использование
 
+**Следующий gate — Bracer 03:** [Bracer-only и активация под маской](SCABBARD_RECONCILE_BRACER_03.md#один-игровой-gate) в одном коротком сеансе после разрешения на установку. Если UI не допускает пустой соседний слот, сохранить этот предел приёмки и проверить активацию на 0/5. Принятый 5/0 повторно не требуется.
+
 - [Визуальный A/B](SCABBARD_VISUAL_ISOLATION_AB_09.md), [состав шести целей](SCABBARD_RESIDUAL_ISOLATION_12.md), [динамика молота](SCABBARD_DYNAMIC_CUDGEL_13.md), [граница EndPlay](SCABBARD_ENDPLAY_RELEASE_16.md) и [жизненный цикл экипировки](SCABBARD_EQUIPMENT_LIFETIME_17.md) сохраняют доказательства своих наборов.
 - [Integrated 04](SCABBARD_INTEGRATED_21.md), [05](SCABBARD_INTEGRATED_22.md), [06](SCABBARD_INTEGRATED_23.md), [07–08](SCABBARD_INTEGRATED_24.md) — замороженные результаты прежней модели. Из них переиспользуются наблюдения о native slots, активной руке, stock attachments, ранней доставке pre, writers и rollback. Повторять старый событийный таймер и визуальный A/B в новом сеансе не требуется.
