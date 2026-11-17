@@ -12,7 +12,7 @@
 
 ## Следующий этап: один устанавливаемый dev-кандидат
 
-Выбрана единая доказанная основа `research/scabbard-reconcile-bracer-03/Scripts/*.lua`; её ядро reconcile/visibility побайтно совпадает с Universal 01. **Не создавайте Bracer 04 и не повторяйте весь шестисемейный прогон.** Выполнить конкретные production-start/stop, поддерживаемые логи, воспроизводимую упаковку, офлайн-regression и одну новую игровую приёмку только поставляемого кандидата, согласно [RELEASE_READINESS.md](RELEASE_READINESS.md).
+Выбрана единая доказанная основа `research/scabbard-reconcile-bracer-03/Scripts/*.lua`; её ядро reconcile/visibility побайтно совпадает с Universal 01. Пять файлов уже перенесены без изменения байтов в `Scripts/*` на dev-ветке (`5a490eb`); переход к автоматическому startup/stop ещё не выполнен. **Не создавайте Bracer 04 и не повторяйте весь шестисемейный прогон.** Выполнить конкретные production-start/stop, поддерживаемые логи, воспроизводимую упаковку, офлайн-regression и одну новую игровую приёмку только поставляемого кандидата, согласно [RELEASE_READINESS.md](RELEASE_READINESS.md).
 
 ## Ранее выполненные игровые gates
 
