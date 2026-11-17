@@ -6,9 +6,25 @@ local makeVisibility = require("visibility")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
+local VERSION = "0.1.0-test.1"
+local DEBUG_LOGGING = false
 
+local lastWarning
+local errors = {FAULT=true, HOOK_FAULT=true, DRAW_FAULT=true, LIFECYCLE_FAULT=true,
+    START_FAILED=true, CLEANUP_PENDING=true, WRITE_FAILED=true, PROBE_FAILED=true}
 local function log(event, detail)
-    print("[ScabbardBracer01] " .. event .. " " .. (detail or "") .. "\n")
+    if event == "PASS_THROUGH" or event == "OBSERVATION" then
+        local warning = event .. " " .. ((detail or ""):match("^%S+") or "")
+        if not DEBUG_LOGGING and warning == lastWarning then return end
+        lastWarning = warning
+    elseif not DEBUG_LOGGING and not errors[event] and event ~= "START"
+        and event ~= "CLEANED" and event ~= "WRITER" and event ~= "HIDDEN"
+        and event ~= "RELEASED" and event ~= "RETIRED" and event ~= "FOREIGN_CONTROLLED" then
+        return
+    end
+    local level = errors[event] and "ERROR" or
+        ((event == "WRITER" or event == "PASS_THROUGH" or event == "OBSERVATION") and "WARNING" or "INFO")
+    print(("[MagicalScabbards %s] %s %s %s\n"):format(VERSION, level, event, detail or ""))
 end
 
 local controller, session, handle, loading, maskedIdentity, lastSample, windowIdentity
@@ -129,13 +145,19 @@ local function stop()
             if ok and result ~= false then hooks[path] = nil end
         end
     end
-    log(clean and not handle and not next(hooks) and "CLEANED" or "CLEANUP_PENDING", "stop")
+    local finished = clean and not handle and not next(hooks)
+    log(finished and "CLEANED" or "CLEANUP_PENDING",
+        finished and "disabled; own masks released or retired" or "stop incomplete; close the game before reloading this mod")
 end
 
 local function start()
-    if session or handle or next(hooks) or (controller and controller.pending()) then return end
+    if session then return end
+    if handle or next(hooks) or (controller and controller.pending()) then
+        log("CLEANUP_PENDING", "restart blocked; close the game")
+        return
+    end
     local ticket = {}
-    lastNote = nil
+    lastNote, lastWarning = nil, nil
     controller = makeVisibility(equipment, function(c, value) c:SetVisibility(value, false) end, log)
     session = ticket
     for _, entry in ipairs({{VIS, "visible"}, {HIDDEN, "hidden"}}) do
@@ -155,37 +177,60 @@ local function start()
     end, function() end)
     handle = LoopInGameThreadWithDelay(100, function() sample(ticket) end)
     assert(math.type(handle) == "integer" and IsValidDelayedActionHandle(handle), "invalid loop handle")
-    log("START", "stock-catalogue interval_ms=100")
+    log("START", "enabled; Ctrl+Alt+F8 toggles this session; target UE4SS 83330635")
 end
 
-local mods = {ModifierKey.CONTROL, ModifierKey.ALT}
-assert(EngineTickAvailable and type(LoopInGameThreadWithDelay) == "function"
-    and type(RegisterEndPlayPreHook) == "function")
-assert(not IsKeyBindRegistered(Key.F7, mods) and not IsKeyBindRegistered(Key.F8, mods), "test chord occupied")
-RegisterLoadMapPreHook(function()
-    loading = true
-    release("load-map-pre")
-    equipment.reset()
-end)
-RegisterLoadMapPostHook(function() loading = false end)
-RegisterEndPlayPreHook(function(param, reason)
-    if not session then return end
-    local ok, err = pcall(function()
-        local actor = param:get()
-        local key = equipment.id(actor)
-        if key == "-" or not controller.tracksOwner(key) then return end
-        local destroyed = reason:get() == 0 and actor:IsActorBeingDestroyed() == true
-        if controller.endPlay(actor, key, destroyed) then release("owner-end-play") end
-    end)
+local function runStart()
+    local ok, err = pcall(start)
     if not ok then
-        controller.invalidate()
-        log("LIFECYCLE_FAULT", tostring(err))
+        log("START_FAILED", tostring(err))
+        local cleaned, problem = pcall(stop)
+        if not cleaned then log("CLEANUP_PENDING", tostring(problem)) end
     end
-end)
-RegisterKeyBind(Key.F7, mods, function()
-    ExecuteInGameThread(function()
-        local ok, err = pcall(start)
-        if not ok then log("START_FAILED", tostring(err)); stop() end
-    end, EGameThreadMethod.EngineTick)
-end)
-RegisterKeyBind(Key.F8, mods, function() ExecuteInGameThread(stop, EGameThreadMethod.EngineTick) end)
+end
+
+local function initialize()
+    assert(EngineTickAvailable and EGameThreadMethod and EGameThreadMethod.EngineTick, "EngineTick unavailable")
+    assert(Key and Key.F8 and ModifierKey and ModifierKey.CONTROL and ModifierKey.ALT, "key API unavailable")
+    local mods = {ModifierKey.CONTROL, ModifierKey.ALT}
+    for _, api in ipairs({"LoopInGameThreadWithDelay", "ExecuteInGameThread", "RegisterHook", "UnregisterHook",
+        "RegisterEndPlayPreHook", "RegisterLoadMapPreHook", "RegisterLoadMapPostHook",
+        "IsValidDelayedActionHandle", "CancelDelayedAction", "RegisterKeyBind", "IsKeyBindRegistered"}) do
+        assert(type(_G[api]) == "function", "required API unavailable: " .. api)
+    end
+    assert(not IsKeyBindRegistered(Key.F8, mods), "Ctrl+Alt+F8 occupied; mod stays disabled")
+    RegisterLoadMapPreHook(function()
+        loading = true
+        release("load-map-pre")
+        equipment.reset()
+    end)
+    RegisterLoadMapPostHook(function() loading = false end)
+    RegisterEndPlayPreHook(function(param, reason)
+        if not session then return end
+        local ok, err = pcall(function()
+            local actor = param:get()
+            local key = equipment.id(actor)
+            if key == "-" or not controller.tracksOwner(key) then return end
+            local destroyed = reason:get() == 0 and actor:IsActorBeingDestroyed() == true
+            if controller.endPlay(actor, key, destroyed) then release("owner-end-play") end
+        end)
+        if not ok then
+            controller.invalidate()
+            log("LIFECYCLE_FAULT", tostring(err))
+        end
+    end)
+    RegisterKeyBind(Key.F8, mods, function()
+        ExecuteInGameThread(function()
+            if session or handle or next(hooks) or (controller and controller.pending()) then
+                local ok, err = pcall(stop)
+                if not ok then log("CLEANUP_PENDING", tostring(err)) end
+            else
+                runStart()
+            end
+        end, EGameThreadMethod.EngineTick)
+    end)
+    ExecuteInGameThread(runStart, EGameThreadMethod.EngineTick)
+end
+
+local initialized, problem = pcall(initialize)
+if not initialized then log("START_FAILED", tostring(problem)) end
