@@ -1,6 +1,6 @@
 # MagicalScabbards — актуальный исследовательский план
 
-**2026-11-17 · Переход к dev-кандидату; production gate BLOCKED.** Принятые требования — в [REQUIREMENTS.md](REQUIREMENTS.md). Каноническая сводка игровых результатов и необходимых production-gates — [RELEASE_READINESS.md](RELEASE_READINESS.md). В `dev/release-prep-01` подготовлен `0.1.0-test.1` с автозапуском, F8 stop/restart и воспроизводимой упаковкой; следующий шаг — только [адресная игровая приёмка](RELEASE_CANDIDATE_01.md) после отдельного разрешения на установку. Исходники исторических кандидатов не менять; повторного read-only исследования не требуется.
+**2026-11-17 · Переход к dev-кандидату; production gate BLOCKED.** Принятые требования — в [REQUIREMENTS.md](REQUIREMENTS.md). Каноническая сводка игровых результатов и необходимых production-gates — [RELEASE_READINESS.md](RELEASE_READINESS.md). В `dev/release-prep-01` подготовлен `0.1.0-test.1` с автозапуском, F8 stop/restart и воспроизводимой упаковкой; кандидат установлен с разрешения и прошёл визуальный сеанс 2026-11-19. Startup/смены/reload/первый STOP/restart подтверждены, но финал содержит CLEANUP_PENDING owner-ended без второго CLEANED. Следующий шаг — только [короткий stop/restart/stop gate](RELEASE_CANDIDATE_01.md), без повторения комплектов и изменения замороженного кандидата. Исходники исторических кандидатов не менять; повторного read-only исследования не требуется.
 
 ## Что уже установлено — не повторять
 
