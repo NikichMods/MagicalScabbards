@@ -39,11 +39,17 @@ def build():
     files = {name: git("show", f"{commit}:{name}") for name in FILES}
     main = files["Scripts/main.lua"].decode()
     version = re.search(r'^local VERSION = "([^"]+)"$', main, re.M).group(1)
-    assert re.fullmatch(r"\d+\.\d+\.\d+-test\.\d+", version)
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:-test\.\d+)?", version)
+    stable = "-test." not in version
     assert 'local DEBUG_LOGGING = false' in main
     assert f"MagicalScabbards-{version}.zip".encode() in files["README.md"]
-    record = git("show", f"{commit}:docs/RELEASE_CANDIDATE_01.md")
-    assert f"# Устанавливаемый кандидат 01 — {version}".encode() in record
+    record_name = f"docs/RELEASE_{version}.md" if stable else "docs/RELEASE_CANDIDATE_01.md"
+    record = git("show", f"{commit}:{record_name}")
+    if stable:
+        assert f"# MagicalScabbards {version}".encode() in record
+        assert b"dddd75b6195376521fb8aab9dedeb1232e5f9005" in record
+    else:
+        assert f"# Устанавливаемый кандидат 01 — {version}".encode() in record
     for name in FILES:
         if name.startswith("Scripts/"):
             assert files[name].startswith(b"-- SPDX-License-Identifier: MPL-2.0")
@@ -55,7 +61,9 @@ def build():
     manifest = {"mod": "MagicalScabbards", "version": version, "source_commit": commit,
                 "source_url": f"https://github.com/NikichMods/MagicalScabbards/tree/{commit}",
                 "target": "Asterigos Steam 1.09 build 12996889; UE4SS 3.0.1-1181-g83330635; Windows x64",
-                "acceptance": "PENDING", "sha256": {name: sha(data) for name, data in sorted(files.items())}}
+                "acceptance": "ACCEPTED" if stable else "PENDING",
+                "accepted_test_source": "dddd75b6195376521fb8aab9dedeb1232e5f9005" if stable else None,
+                "sha256": {name: sha(data) for name, data in sorted(files.items())}}
     files["manifest.json"] = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
     data = archive(files)
     assert data == archive(files), "non-reproducible archive"
