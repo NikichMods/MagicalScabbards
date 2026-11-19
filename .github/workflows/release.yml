@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: MPL-2.0
+name: Publish stable release
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Scripts/main.lua'
+      - 'docs/RELEASE_0.1.0.md'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-stable-main
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Verify exact source identity
+        shell: pwsh
+        run: |
+          if ((git rev-parse HEAD) -ne '${{ github.sha }}') { throw 'Source SHA mismatch' }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Lua 5.4 test engine
+        run: python -m pip install lupa==2.8
+      - name: Run frozen and current runtime regressions
+        run: python tools/test.py
+      - name: Build immutable source-only ZIP and manifest
+        run: python tools/package.py
+      - name: Validate release identity and checksum
+        id: identity
+        shell: pwsh
+        run: |
+          $code = Get-Content Scripts/main.lua -Raw
+          if ($code -notmatch '(?m)^local VERSION = "(\d+\.\d+\.\d+)"$') { throw 'Release requires stable version in main.lua' }
+          $version = $Matches[1]
+          $notes = "docs/RELEASE_NOTES_$version.md"
+          $record = "docs/RELEASE_$version.md"
+          if (!(Test-Path $notes) -or !(Test-Path $record)) { throw 'Missing matching release notes/record' }
+          $zip = "dist/MagicalScabbards-$version.zip"
+          $checksum = "$zip.sha256"
+          $manifestPath = "dist/MagicalScabbards-$version.manifest.json"
+          $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+          if ($manifest.version -ne $version -or $manifest.acceptance -ne 'ACCEPTED' -or $manifest.source_commit -ne $env:GITHUB_SHA) { throw 'Manifest identity mismatch' }
+          if ((Get-Content $notes -Raw) -notmatch [regex]::Escape("MagicalScabbards-$version.zip")) { throw 'Release notes version mismatch' }
+          $expectedHash = ((Get-Content $checksum -Raw) -split ' ')[0].Trim().ToLowerInvariant()
+          $actualHash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expectedHash -ne $actualHash) { throw 'ZIP checksum mismatch' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+      - name: Publish exactly this checked artifact
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.identity.outputs.version }}'
+          $tag = '${{ steps.identity.outputs.tag }}'
+          $existing = & gh release view $tag --json tagName 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "Release $tag already exists; refusing to replace it" }
+          $found = & git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to verify existing tags' }
+          if ($found) { throw "Tag $tag already exists; refusing to replace it" }
+          $zip = "dist/MagicalScabbards-$version.zip"
+          $checksum = "$zip.sha256"
+          $manifest = "dist/MagicalScabbards-$version.manifest.json"
+          $notes = "docs/RELEASE_NOTES_$version.md"
+          & gh release create $tag $zip $checksum $manifest --target $env:GITHUB_SHA --title "MagicalScabbards $tag" --notes-file $notes --latest
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed' }
+          $tagOutput = & git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0 -or !$tagOutput) { throw 'Release tag verification failed' }
+          $tagSha = ($tagOutput -split '\s+')[0]
+          if ($tagSha -ne $env:GITHUB_SHA) { throw "Tag points to $tagSha instead of $env:GITHUB_SHA" }

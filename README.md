@@ -1,74 +1,54 @@
 # MagicalScabbards
 
-Мод для **Asterigos: Curse of the Stars**, скрывающий ножны Хильды и размещённое в них оружие, когда оружие полностью убрано. При начале вынимания ножны показываются, во время использования и убирания остаются видимыми; после **3000 мс непрерывно подтверждённого stowed** снова скрываются. Боевой статус не определяет видимость.
+MagicalScabbards is a lightweight **Asterigos: Curse of the Stars** mod that hides Hilda's scabbards and weapons stored inside them when her weapons are put away.
 
-> **Статус:** тестовый устанавливаемый кандидат **0.1.0-test.1**, игровая приёмка ожидается. Есть успешные исследовательские игровые проверки на всех шести семействах оружия в указанных сочетаниях. Принятой production-версии и публичного релиза пока нет.
+The scabbards return when Hilda starts drawing a weapon. They remain visible during combat and while she puts the weapon away, then disappear after **3 seconds of confirmed stowed state**. This does not depend on whether Hilda is in combat.
 
-## Принцип работы
+**Latest stable version:** 0.1.0 — [Download on GitHub Releases](https://github.com/NikichMods/MagicalScabbards/releases/latest).
 
-- Одно общее правило для меча и щита, молота, парных клинков, копья, посоха и браслетов; проверяется актуальное состояние оружия и компоненты локальной Хильды.
-- Браслеты на руках не скрываются и не являются ножнами. Из 15 известных stock-ресурсов мод может скрывать только живые экземпляры с подтверждённой ролью убранного комплекта; активное оружие в руках и предметы мира остаются штатными.
-- При смене оружия через меню допускаются временное появление ножен и новый трёхсекундный отсчёт: надёжность важнее визуальной непрерывности.
-- Будущий небольшой магический эффект рассматривается отдельно от базового механизма.
+## Features
 
-## Установка тестового кандидата
+- Works with sword and shield, cudgel, daggers, spear, staff, and bracers in the tested equipment combinations.
+- Keeps weapons in Hilda's hands and her wrist bracers visible.
+- Restores the game's normal scabbard visibility when a weapon is drawn, during equipment changes, and when the mod is disabled.
+- Uses the game's existing meshes. No replacement game assets, save changes, or other mods are required beyond UE4SS.
+- Does not add a visual magic effect in v0.1.0. This may be considered separately.
 
-Целевое окружение: Asterigos Steam 1.09 / build 12996889, UE4.27, Windows x64,
-UE4SS v3.0.1-1181-g83330635. Исследовательская база проверена на нём; штатный
-запуск именно этого кандидата ещё требует игровой приёмки. Другие сборки не проверены.
-UE4SS устанавливается отдельно; мод не содержит его, игровые ресурсы или UEHelpers.
+## Requirements
 
-1. Полностью закройте игру. Сохраните прежний журнал и резервную копию старого кандидата
-   **вне активной папки Mods**. Отключите все предыдущие варианты MagicalScabbards,
-   включая их `enabled.txt` и включающие записи в `mods.txt`. Другие моды не изменяйте.
-2. Распакуйте `MagicalScabbards-0.1.0-test.1.zip` в используемую UE4SS папку `Mods`.
-   Должны получиться `Mods/MagicalScabbards/Scripts/main.lua` и ещё четыре Lua рядом,
-   `Mods/MagicalScabbards/enabled.txt`, лицензии, этот README и `manifest.json`.
-   Дополнительная вложенность `MagicalScabbards/MagicalScabbards` недопустима.
-3. Сверьте SHA-256 пяти Lua с `manifest.json`. Оставьте один активный кандидат.
-   `enabled.txt` запускает мод автоматически: **Ctrl+Alt+F7 больше не нужен**.
+Verified with **Asterigos Steam 1.09 / build 12996889**, Windows x64, UE4.27, and **UE4SS v3.0.1-1181-g83330635**. Other game and UE4SS versions are not verified.
 
-**Управление:** Ctrl+Alt+F8 останавливает работающий мод и восстанавливает только
-его собственные изменения. Дождитесь возврата комплекта и `CLEANED disabled`
-в журнале UE4SS. Следующее нажатие F8 включает его заново с новым отсчётом.
-Если есть `CLEANUP_PENDING`, повторное включение заблокировано: закройте игру
-и сохраните журнал для разбора. Если комбинация уже занята, мод сообщает
-`START_FAILED` и остаётся выключенным.
+Install UE4SS separately. This mod does not include UE4SS, game assets, or assets from other mods. Do not use an asset-replacement mod that removes the original scabbard meshes if you expect MagicalScabbards to show them again.
 
-**Постоянное отключение:** при закрытой игре уберите `enabled.txt` и убедитесь,
-что нет включающей строки `MagicalScabbards : 1` в `mods.txt` (поставьте `0`
-либо уберите только эту строку). Один `0` при оставленном `enabled.txt` недостаточен.
-Для удаления уберите папку мода при закрытой игре. Для отката верните сохранённые
-файлы предыдущего кандидата и его способ включения, оставив один активный вариант.
-F8 действует только до завершения процесса; следующий обычный запуск снова автоматический.
+## Installation
 
-**Загрузка карты:** активный мод отпускает свои маски перед загрузкой и начинает
-новое трёхсекундное окно после появления достоверной Хильды. Остановленный через
-F8 мод загрузкой карты не включается. Горячая перезагрузка Lua/UE4SS и выгрузка
-мода при живой игре не поддерживаются; для замены файлов полностью закройте игру.
-На штатном выходе процесса объекты игры уничтожаются, сохранения мод не меняет.
+1. Close the game.
+2. Download `MagicalScabbards-0.1.0.zip` from [Releases](https://github.com/NikichMods/MagicalScabbards/releases/tag/v0.1.0).
+3. Extract it into your **UE4SS `Mods` folder**, not into the game's root directory. The layout must be `Mods/MagicalScabbards/Scripts/main.lua` with the four other Lua files beside it.
+4. Keep `Mods/MagicalScabbards/enabled.txt` in place for automatic startup.
+5. Make sure you have **only one active MagicalScabbards installation**. Disable earlier test or research copies in `enabled.txt` and `mods.txt`; do not alter unrelated mods.
 
-Журнал содержит `[MagicalScabbards 0.1.0-test.1]`, `START`, `HIDDEN`, `RELEASED`,
-результат очистки и отказы. Подробные окна/сканирования по умолчанию отключены.
-При конфликте с другим writer мод уступает управление, сообщает `WRITER` и
-не пытается постоянно перескрывать объект. Совместимость с конкретным набором
-CombatHUD/HildaSoftLight/косметики подтверждается отдельно игровым сеансом;
-чужие ресурсы и настройки установщик не меняет.
+MagicalScabbards starts automatically when the game loads. No hotkeys are needed for normal play.
 
-## Воспроизводимость и приёмка
+**Optional control:** `Ctrl+Alt+F8` turns the mod off for the current game session and restores its own hidden components. Press it again to restart the mod and begin a new 3-second observation window. **You do not need to press F8 before quitting the game.** If a cleanup error is reported in the log, save the log before restarting.
 
-Проверки: Python 3.12 + `lupa==2.8`, `python tools/test.py` (именно Lua 5.4).
-Упаковка из чистого коммита: `python tools/package.py`. ZIP содержит исходный Lua,
-MPL-2.0 и manifest точного SHA/версии/хэшей; зависимости тестов в мод не входят.
-Файлы берутся из Git blobs, ZIP использует фиксированные метаданные без сжатия,
-поэтому CRLF checkout и версия компрессора не меняют результат.
+**Permanent disable / uninstall:** Close the game, remove `enabled.txt` and disable any `MagicalScabbards : 1` entry in `mods.txt`, or remove the mod folder entirely. UE4SS checks both ways of enabling a mod. Do not replace or hot-reload Lua files while the game is running.
 
-Краткий игровой сценарий и границы кандидата: [RELEASE_CANDIDATE_01.md](docs/RELEASE_CANDIDATE_01.md).
-Установка производится отдельно с разрешения пользователя; до приёмки нет
-продвижения runtime в `main` или GitHub Release.
+## Behavior and limitations
 
-## Источники
+- Changing weapons in the menu may briefly show scabbards and restart the 3-second countdown. This is intentional.
+- Using bracers may also trigger the ordinary show/hide cycle. The wrist meshes themselves are not hidden.
+- Hot Lua unloading is not supported. Use F8 to disable the active session, or close the game to update files.
+- An isolated `CLEANUP_PENDING owner-ended` message was observed near process shutdown during testing; its cause was not established. Controlled stop/restart/stop succeeded in a separate test. Report any **visible in-game defect** or repeatable problem during play.
 
-Текущая исследовательская основа — [Bracer 03](docs/SCABBARD_RECONCILE_BRACER_03.md); ранее принятые маршруты — [Universal 01](docs/SCABBARD_RECONCILE_UNIVERSAL_01.md). Сводная [матрица доказательств и план подготовки](docs/RELEASE_READINESS.md), [требования](docs/REQUIREMENTS.md), [текущий статус](docs/STATUS.md), [план](docs/RESEARCH_PLAN.md) и [правила проекта](AGENTS.md).
+## Troubleshooting
 
-Исходники и документы распространяются по [MPL-2.0](LICENSE). Игра и proprietary-ресурсы Asterigos в репозитории не распространяются.
+The UE4SS log identifies the mod as `[MagicalScabbards 0.1.0]`. Look for `START`, `HIDDEN`, `RELEASED`, and `CLEANED`. If a problem happens, include the game/UE4SS versions, your two equipped weapon types, the steps that triggered it, and the relevant UE4SS log in a [GitHub Issue](https://github.com/NikichMods/MagicalScabbards/issues).
+
+The ZIP includes a `manifest.json` with the exact source commit and SHA-256 of the files. The matching checksums and manifest are also included as release assets. Do not install the archive one folder deeper than shown above.
+
+## License and project
+
+Original source code and accompanying documentation: **MPL-2.0**. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Asterigos and other third-party content belong to their respective owners.
+
+[Changelog](CHANGELOG.md) · [Release evidence](docs/RELEASE_0.1.0.md) · [Project status](docs/STATUS.md)

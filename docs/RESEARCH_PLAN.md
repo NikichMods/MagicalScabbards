@@ -1,38 +1,22 @@
-# MagicalScabbards — актуальный исследовательский план
+# MagicalScabbards — принятые исследования и дальнейшая поддержка
 
-**2026-11-19 · Игровой сценарий 0.1.0-test.1 с явным STOP — PASS.** [Требования](REQUIREMENTS.md), [сводка](RELEASE_READINESS.md), [основной и адресный сеансы](RELEASE_CANDIDATE_01.md). Startup, смены, draw, Bracer, reload и F8 stop/restart/stop подтверждены в принятом объёме. Общую матрицу и короткий F8 gate не повторять. Исходный кандидат `dddd75b` неизменен. Перед продвижением отдельно определить границу выхода с активной маской: прежний owner-ended не объяснён и не закрывается успешной явной остановкой. Автоматического нового исследования, установки, изменения runtime или публикации этот отчёт не запускает.
+**2026-11-19:** пользователь принял базовую механику и разрешил первую стабильную `v0.1.0`. Актуальный статус — [STATUS.md](STATUS.md); точный релизный gate — [RELEASE_0.1.0.md](RELEASE_0.1.0.md). Старая исследовательская программа завершена. Продолжать серию numbered probes без нового факта/ошибки не требуется.
 
-## Что уже установлено — не повторять
+## Принятая база
 
-- [Static 01](https://github.com/NikichMods/MagicalScabbards/blob/9f360eba1dd8eb33eba5e0b6de075c278a664e10/docs/SCABBARD_STATIC_RESEARCH_01.md): все **15 из 15** замен стороннего No Scabbard — пустые SkeletalMesh; сохранены stock asset paths, исходные LOD/секции, Blueprint SCS, владельцы и штатные writers. Сторонняя замена ресурсов не является обратимым runtime-hide.
-- [Runtime 01](https://github.com/NikichMods/MagicalScabbards/blob/3d60cf7ce8725f4fa0efa4b2d589a1ac24c73064/docs/SCABBARD_RUNTIME_RESEARCH_01.md): verified local pawn, owner/attachments, появление новых инстансов после reload; battle getter не описывает equip state. В одном снимке после reload `_Unuse` имел owner/attachment к новому pawn; это **кандидат для проверки**, а не подтверждение его участия в последнем визуальном сеансе.
-- [Cooperative-cudgel-01/02](https://github.com/NikichMods/MagicalScabbards/blob/24c581305210260ae8e36ea0c4f172323b5312bc/docs/RESEARCH_PLAN.md): на обычном молоте есть частичный runtime PASS для отложенного hide примерно через 2016 мс, раннего release и ручного STOP; подтверждено, что одного `hilda_cudgel_sheath` визуально недостаточно. Полный динамический draw/stow acceptance не получен.
-- [A/B изоляция](https://github.com/NikichMods/MagicalScabbards/blob/9fc109cac79895e1ed0cd5fae0e2d71f79c2e49d/docs/SCABBARD_VISUAL_ISOLATION_AB_09.md): `scabbard_a` даёт длинный диагональный корпус и кольцо, `scabbard_b` — небольшую накладку; `hilda_cudgel_sheath` отвечает за нижний выступ.
-- [Совместное скрытие 10](https://github.com/NikichMods/MagicalScabbards/blob/a8a76622888d0257e08e8442ffd80cdd5d93453b/docs/SCABBARD_COMBINED_VISIBILITY_10.md): `hilda_cudgel_sheath + scabbard_a + scabbard_b` одновременно скрываются и вручную восстанавливаются (**PASS в игре**); остаются светящийся медальон и тёмные детали на пояснице. Их owner/назначение ещё неизвестны.
+- [State Reconcile 01](SCABBARD_STATE_RECONCILE_01.md): runtime phase и 3000 мс устойчивого stowed; Lua 5.4.
+- [Boundary 01](SCABBARD_RECONCILE_BOUNDARY_02.md): generic BeginDoSkill pre и outgoing held.
+- [Write 02](SCABBARD_RECONCILE_WRITE_02.md): game-thread setter, lease/rollback, смена и STOP.
+- [Universal 01](SCABBARD_RECONCILE_UNIVERSAL_01.md): четыре комплекта с пятью семействами, меню/reload/STOP.
+- [Bracer 02](SCABBARD_RECONCILE_BRACER_02.md), [Bracer 03](SCABBARD_RECONCILE_BRACER_03.md): wrist-only не блокирует ножны; игровой PASS для Bracer с Staff и ShieldSword в обоих порядках; Bracer-only в Lua 5.4.
+- [0.1.0-test.1](RELEASE_CANDIDATE_01.md): автоматический запуск, игровое hide/show, смены, reload и F8 STOP/restart/STOP на неизменном кандидате, два журнала с точными SHA-256.
 
-## Следующий этап: один устанавливаемый dev-кандидат
+История No Scabbard, asset census, visual isolation, все 15 stock paths и текущие доказательства сохраняются в существующих документах. Точные результаты исходных сеансов не переписывать.
 
-Выбрана единая доказанная основа `research/scabbard-reconcile-bracer-03/Scripts/*.lua`; её ядро reconcile/visibility побайтно совпадает с Universal 01. Пять файлов уже перенесены без изменения байтов в `Scripts/*` на dev-ветке (`5a490eb`); переход к автоматическому startup/stop ещё не выполнен. **Не создавайте Bracer 04 и не повторяйте весь шестисемейный прогон.** Выполнить конкретные production-start/stop, поддерживаемые логи, воспроизводимую упаковку, офлайн-regression и одну новую игровую приёмку только поставляемого кандидата, согласно [RELEASE_READINESS.md](RELEASE_READINESS.md).
+## После выпуска
 
-## Ранее выполненные игровые gates
+Обычная поддержка через Issues и реальные игровые отчёты. При проблеме: идентификатор v0.1.0, версия Steam/UE4SS, оба оружия, шаги и UE4SS журнал. Локализовать подтверждённый дефект и минимальную безопасную корректировку, не возвращать весь цикл исследований.
 
-[Первый read-only сеанс State Reconcile 01](SCABBARD_STATE_RECONCILE_01.md#игровой-сеанс-2026-11-09) подтвердил политику времени и переходы native hand на всех шести семействах. [Boundary 01](SCABBARD_RECONCILE_BOUNDARY_02.md#игровой-сеанс-boundary-01) сопоставил generic pre с кадрами двух обычных draw молота и показал BLOCKED → CLEAR при смене на клинки.
+Необязательные улучшения: небольшой VFX при hide/show, непрерывность скрытия через меню, различение активации Bracer в generic pre. Реализовать только если механика проста и доказуема; надёжность/корректный rollback выше косметики.
 
-Два [игровых сеанса Write 02](SCABBARD_RECONCILE_WRITE_02.md#игровой-сеанс-2026-11-10) остаются baseline для владения масками. [Объединённый сеанс Universal 01](SCABBARD_RECONCILE_UNIVERSAL_01.md#игровой-сеанс-2026-11-10) завершён с PASS для наблюдавшихся четырёх комплектов пяти семейств, смен, reload и STOP под маской. Для полного покрытия остаётся определить stowed и визуальную роль браслетов. Повтор уже пройденных маршрутов без конкретного основания не требуется.
-
-## Отложенные необязательные UX-улучшения (история решения 2026-11-10)
-
-В REQUIREMENTS.md определены **необязательные** пожелания: при Bracer + ShieldSword отличать фактическое использование браслетов от draw меча; при menu-swap по возможности сохранять скрытое состояние и уже идущий таймер. Принятое Universal 01 работает по общему BeginDoSkill и сбрасывает окно при смене identity; это допустимый baseline, не новый FAIL.
-
-**Предварительное заключение по существующим свидетельствам:** общий BeginDoSkill pre в Universal 01 получает anim instance и вызывает release для любых действий; в уже принятых данных нет проверенного раннего признака семейства при двух одновременных выбранных слотах. Поэтому «не показывать ножны только при использовании Bracer» пока не имеет простого READY-пути. Дополнительно Universal 01 помечает Bracer observationOnly и не получает STOWED, поэтому текущая схема не скрывает ножны после использования Bracer даже через 3 секунды. Сначала ограниченно проверить именно структурное распознавание stowed Bracer без маскирования браслетов на руках; это может позволить простой обычный трёхсекундный цикл. Если такого доказательства нет, зафиксировать BLOCKED и оставить baseline.
-
-[Игровой сеанс Bracer 01](SCABBARD_RECONCILE_BRACER_01.md#игровой-сеанс-2026-11-10) подтвердил созревание окна и 22 отказа outgoing guard до записи. Причина в общем whitelist: `outgoing.lua` считает `HildaBracelet_BP.SkeletalMesh=hilda_bracelet` опасным локальным outgoing held, хотя штатный видимый браслет на запястье не относится к ножнам. **Решение:** не углубляться автоматически в identity-исследование второго браслета; сначала исключить этот известный wrist-only stock asset из **класса препятствий для скрытия ножен** (но не из native snapshot и проверки фазы Bracer). Оставить весь прочий outgoing guard, selected identity, admission/lease, generic draw release и 3000 мс неизменными. Проверить Lua-сценарий с видимым `hilda_bracelet` вне selected и сохранение `BLOCKED` для видимого уходящего молота/меча/щита, а также отказ для неоднозначного настоящего оружия. Затем один короткий игровой Bracer + ShieldSword hide/draw/STOP; не повторять другие четыре принятых комплекта. Если после исправления обнаружится независимый блокер, диагностировать его отдельно, а не объявлять отсутствие ножен у Bracer технической проблемой.
-
-**Bracer 02:** [адресный hide/draw/STOP](SCABBARD_RECONCILE_BRACER_02.md#игровой-сеанс-2026-11-10) пройден на Bracer + ShieldSword в порядке 5/0. Обратный порядок подтверждён только на подменённом хосте. Игровой результат не расширяет допуск на иные маршруты.
-
-## История и повторное использование
-
-**Bracer 03:** [игровой сеанс](SCABBARD_RECONCILE_BRACER_03.md#игровой-сеанс-2026-11-17) подтвердил наблюдавшиеся пары, повторный hide после действия и чистый STOP. Пользователь подтвердил недоступность пустого соседнего слота в штатной игре. Приёмка 5/7 и 7/5 снята с обязательного объёма. Адресный этап Bracer завершён на наблюдавшихся парах; офлайн-проверки Bracer-only сохранены.
-
-- [Визуальный A/B](SCABBARD_VISUAL_ISOLATION_AB_09.md), [состав шести целей](SCABBARD_RESIDUAL_ISOLATION_12.md), [динамика молота](SCABBARD_DYNAMIC_CUDGEL_13.md), [граница EndPlay](SCABBARD_ENDPLAY_RELEASE_16.md) и [жизненный цикл экипировки](SCABBARD_EQUIPMENT_LIFETIME_17.md) сохраняют доказательства своих наборов.
-- [Integrated 04](SCABBARD_INTEGRATED_21.md), [05](SCABBARD_INTEGRATED_22.md), [06](SCABBARD_INTEGRATED_23.md), [07–08](SCABBARD_INTEGRATED_24.md) — замороженные результаты прежней модели. Из них переиспользуются наблюдения о native slots, активной руке, stock attachments, ранней доставке pre, writers и rollback. Повторять старый событийный таймер и визуальный A/B в новом сеансе не требуется.
+Поддержка других сборок игры и сторонних косметических модов — по фактическим совместимым данным, не объявлять заранее.
