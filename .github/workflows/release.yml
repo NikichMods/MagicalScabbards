@@ -40,7 +40,7 @@ jobs:
         shell: pwsh
         run: |
           $code = Get-Content Scripts/main.lua -Raw
-          if ($code -notmatch '(?m)^local VERSION = "(\d+\.\d+\.\d+)"$') { throw 'Release requires stable version in main.lua' }
+          if ($code -notmatch '(?m)^local VERSION = "(\d+\.\d+\.\d+)"\r?$') { throw 'Release requires stable version in main.lua' }
           $version = $Matches[1]
           $notes = "docs/RELEASE_NOTES_$version.md"
           $record = "docs/RELEASE_$version.md"
