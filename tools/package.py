@@ -53,7 +53,11 @@ def build():
     for name in FILES:
         if name.startswith("Scripts/"):
             assert files[name].startswith(b"-- SPDX-License-Identifier: MPL-2.0")
-            assert sha(files[name]).encode() in record, f"stale documented hash: {name}"
+            # The frozen test candidate records source hashes in its report.
+            # Stable assets carry exact per-file SHA-256 in their embedded manifest,
+            # which this packager verifies against the ZIP contents below.
+            if not stable:
+                assert sha(files[name]).encode() in record, f"stale documented hash: {name}"
             if name != "Scripts/main.lua":
                 assert files[name] == git("show", f"{commit}:research/scabbard-reconcile-bracer-03/{name}"), name
     assert b"Mozilla Public License Version 2.0" in files["LICENSE"]
