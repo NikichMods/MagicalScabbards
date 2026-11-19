@@ -29,7 +29,7 @@
 
 ## Локальная проверка 2026-11-19
 
-**Повторно используемое общее доказательство:** [Asterigos-Research `b43b1b9`](https://github.com/NikichMods/Asterigos-Research/commit/b43b1b92455ea55f63bf309e41d4b5b41d29ac35) фиксирует статические UHT-декларации Cascade/Niagara и stock reference `dualoff_fx`, с явной оговоркой об отсутствии игрового runtime PASS. Этот общий источник — ссылка на переносимые факты, а не источник изменяемого статуса MagicalScabbards. Локальный следующий gate ниже остаётся BLOCKED до подтверждения short one-shot, spawn/attachment и cleanup на живой Хильде.
+**Общее доказательство** фиксирует статические UHT-декларации Cascade/Niagara и ссылку штатного Blueprint на `dualoff_fx`. [Asterigos-Research `b43b1b9`](https://github.com/NikichMods/Asterigos-Research/commit/b43b1b92455ea55f63bf309e41d4b5b41d29ac35)
 
 **Статика, Steam 1.09 / build 12996889, UE4.27, UE4SS `83330635`.** Сохранённый штатный UHT-дамп объявляет `UGameplayStatics::SpawnEmitterAttached` (Cascade) и `UNiagaraFunctionLibrary::SpawnSystemAttached`. У обеих функций есть параметры целевого `USceneComponent`, сокета, активации, auto-destroy и pooling. В дампе также есть `USceneComponent::DoesSocketExist`, `UActorComponent::Deactivate` и `K2_DestroyComponent`. Исходники закреплённого UE4SS (`LuaUObject.cpp`, `LuaMod.cpp`) показывают маршалинг отражённых структур из Lua-таблиц, UObject, FName, byte/enum, вызов через `ProcessEvent` и ограничение `LoadAsset` игровым потоком. Это статический маршрут. Вызов конкретного спавнера, полученный объект, владелец и уничтожение в игре ещё не наблюдались. [Контракт вызова UE4SS](https://docs.ue4ss.com/lua-api/classes/ufunction.html) · [Контракт завершения Cascade в справочнике Epic для UE5.8](https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/UGameplayStatics/SpawnEmitterAttached?application_version=5.8).
 
@@ -47,6 +47,12 @@
 | Приёмка | Сначала один отдельный игровой опыт с точным конечным шаблоном на game thread: валидный результат, положение на текущем `CharacterMesh0`, естественное завершение и безопасное снятие при прерывании. После READY — Lua 5.4 для событий/отказов и игровой A/B на комплекте со спиной/поясом и Bracer + ShieldSword. |
 
 **BLOCKED.** Ключевой пробел — подтверждённая пара «конкретный короткий asset → отдельный attached-компонент с конечной жизнью». `SpawnEmitterAttached` — первый маршрут для проверки, потому что в cooked-данных уже найден пример Cascade на оружии. Возобновлять с одного точно идентифицированного one-shot: сначала подтвердить его модули/цикл из метаданных, затем проверить спавн и удаление на текущей Хильде вне событий ножен. Если это сработает, останется проверить семантику настоящего draw для косметического события. Runtime-кандидат и установка в этом этапе отсутствуют.
+
+## Адресная проверка Cascade dualoff_fx
+
+**BLOCKED — нет ключа, который локальный CUE4Parse 1.2.2 принимает для индексов установленного Steam build 12996889.** Ридер распознал `pakchunk0-WindowsNoEditor.pak` и `pakchunk0-WindowsNoEditor.utoc` как зашифрованные контейнеры с индексом. Для обоих `TestAesKey` вернул `false` с нулевым значением и с доступной публичной записью для Asterigos. Смонтировано 0 контейнеров, поэтому точный пакет `/Game/MainContent/Assets/fx/bp/skill/hilda/_dual/private/dualoff_fx` не открылся. Это конкретизирует причину пустого списка при первой проверке. [Правила монтирования CUE4Parse 1.2.2](https://github.com/FabianFG/CUE4Parse/blob/v1.2.2/CUE4Parse/FileProvider/Vfs/AbstractVfsFileProvider.cs)
+
+Сохранённый cooked-экспорт `HildaDualOff_BP` подтверждает ссылку на шаблон Cascade. Данные самого шаблона нужны, чтобы установить конечность эмиссии, длительность, цвет, размер и наличие света. Условие для запуска `SpawnEmitterAttached` пока не выполнено. Создание, положение, естественное завершение и снятие при прерывании на живой Хильде остаются непроверенными. Для возобновления нужен читаемый экспорт модулей именно этого ассета или рабочий доступ к его cooked-пакету.
 
 ## Отложено
 
