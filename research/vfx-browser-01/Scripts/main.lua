@@ -30,10 +30,11 @@ local function resolve(x)
     local o = StaticFindObject(x.path)
     return valid(o) and id(o)==x.address and o or nil
 end
-local function static(cls,method)
-    local path = "/Script/Engine."..cls..":"..method
+local function static(cls,method,scope)
+    scope = scope or "Engine"
+    local path = "/Script/"..scope.."."..cls..":"..method
     local fn = StaticFindObject(path)
-    local cdo = StaticFindObject("/Script/Engine.Default__"..cls)
+    local cdo = StaticFindObject("/Script/"..scope..".Default__"..cls)
     assert(full(fn) == "Function "..path and valid(cdo), "static API unavailable "..path)
     assert((fn:GetFunctionFlags() & 0x400) ~= 0, "non-native function "..path)
     return function(...) return fn(cdo,...) end
@@ -74,7 +75,7 @@ local function createUI(context)
         assert(full(cls)=="WidgetBlueprintGeneratedClass "..WIDGET
             or (cls:type()=="UClass" and (full(cls) or ""):match(" "..WIDGET.."$")),
             "wrong widget class")
-        local create=static("WidgetBlueprintLibrary","Create")
+        local create=static("WidgetBlueprintLibrary","Create","UMG")
         local w=create(context.hud,cls,nil)
         assert(valid(w) and w:GetClass():GetAddress()==cls:GetAddress()
             and not w:IsInViewport(), "wrong/new viewport host")
@@ -269,9 +270,10 @@ local function preview(step)
         ensureCatalog()
         createUI(context)
         if not clearParticle("switch") then return end
-        if step~=0 or selected==0 then
-            selected = ((selected-1+step) % #entries)+1
-            if step==0 and selected==0 then selected=1 end
+        if selected==0 then
+            selected=step<0 and #entries or 1
+        elseif step~=0 then
+            selected=((selected-1+step) % #entries)+1
         end
         local e=entries[selected]
         assert(e,"no candidate")
