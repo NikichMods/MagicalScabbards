@@ -114,12 +114,32 @@ for i=1,2 do
             if key=="StartVelocity" then return object("StructProperty /Script/Engine.ParticleModuleVelocity:StartVelocity") end
         end}
     end
-    lod.Modules=array({velocity})
+    local modules={velocity}
+    if i==2 then
+        local colorType="Class /Script/Engine.ParticleModuleColorScaleOverLife"
+        local color=object("Color module",object(colorType))
+        color.bEnabled=true
+        local input=object("Color input",object("Class /Script/Engine.DistributionVectorParticleParameter"))
+        input.ParameterName=FName("Color")
+        input.Constant,input.MinInput,input.MaxInput={X=1,Y=1,Z=1},{X=0,Y=0,Z=0},{X=1,Y=1,Z=1}
+        input.MinOutput,input.MaxOutput,input.ParamModes=input.MinInput,input.MaxInput,{2,2,2}
+        color.ColorScaleOverLife={Distribution=input,MinValue=1,MaxValue=1}
+        function color:Reflection()
+            return {GetProperty=function(_,key)
+                if key=="ColorScaleOverLife" then
+                    return object("StructProperty /Script/Engine.ParticleModuleColorScaleOverLife:ColorScaleOverLife")
+                end
+            end}
+        end
+        modules[#modules+1]=color
+    end
+    lod.Modules=array(modules)
     local emitter=object("Emitter")
     emitter.LODLevels=array({lod})
-    db[path].Emitters=array({emitter})
+    db[path].Emitters=array(i==2 and {emitter,emitter} or {emitter})
 end
 keys, played, logs, delays={}, {}, {}, {}
+badColorReadback=false
 sharedSettings, sharedCount=nil,0
 ModRef={}
 function ModRef:SetSharedVariable(key, value)
@@ -136,6 +156,12 @@ api("GameplayStatics","SpawnEmitterAttached",function(asset,mesh,socket,_,_,scal
     local c=object("PSC /World.Preview",object("Class /Script/Engine.ParticleSystemComponent"))
     c.Template=asset
     c.CustomTimeDilation=1.0
+    c.InstanceParameters=array({})
+    function c:SetVectorParameter(name, vector)
+        assert(asset==db[catalogEntries[2].path] and name:ToString()=="Color")
+        assert(vector.X==vector.Y and vector.Y==vector.Z)
+        self.InstanceParameters[1]={Name=name,ParamType=badColorReadback and 5 or 3,Vector=vector}
+    end
     function c:GetAttachParent() return mesh end
     function c:GetAttachSocketName() return socket end
     function c:K2_DestroyComponent(component)
@@ -143,7 +169,8 @@ api("GameplayStatics","SpawnEmitterAttached",function(asset,mesh,socket,_,_,scal
         self.alive=false
     end
     function c:Activate()
-        played[#played+1]={asset=asset,scale=scale.X,rate=self.CustomTimeDilation}
+        local row=self.InstanceParameters[1]
+        played[#played+1]={asset=asset,scale=scale.X,rate=self.CustomTimeDilation,color=row and row.Vector.X}
     end
     db["/World.Preview"]=c
     return c
@@ -187,15 +214,25 @@ for i=1,20 do press("NUM_ONE") end
 assert(last().asset==second and delays[#delays]==250)
 for i=1,20 do press("NUM_THREE") end
 assert(last().asset==second and delays[#delays]==3000)
-local beforeBrightness=#played
-press("NUM_TWO"); press("NUM_EIGHT")
-assert(#played==beforeBrightness and delays[#delays]==3000)
+local sharedBeforeColor=sharedCount
+assert(last().color==nil)
+press("NUM_TWO"); assert(last().color==0.75 and last().rate==0.5 and delays[#delays]==3000)
+press("NUM_TWO"); assert(last().color==0.50 and last().scale==0.60 and delays[#delays]==3000)
+press("NUM_TWO"); assert(last().color==0.50)
+press("NUM_EIGHT"); assert(last().color==0.75)
+press("NUM_EIGHT"); assert(last().color==nil and sharedCount==sharedBeforeColor)
+local beforeReadbackFault=#played
+badColorReadback=true
+press("NUM_TWO")
+assert(#played==beforeReadbackFault)
+badColorReadback=false
+press("NUM_EIGHT"); assert(#played==beforeReadbackFault+1 and last().color==nil)
 press("NUM_FOUR")
 assert(last().asset:GetFullName()=="ParticleSystem "..catalogEntries[1].path)
 assert(delays[#delays]==1600 and last().rate==1.0 and last().scale==0.50)
 local beforeOther=#played
 local sharedBeforeOther=sharedCount
-press("NUM_ONE"); press("NUM_THREE"); press("NUM_SEVEN"); press("NUM_NINE")
+press("NUM_ONE"); press("NUM_THREE"); press("NUM_SEVEN"); press("NUM_NINE"); press("NUM_TWO")
 assert(#played==beforeOther)
 press("F2")
 assert(last().scale==0.45 and sharedCount==sharedBeforeOther)
@@ -209,7 +246,9 @@ loadMap()
 press("F9"); assert(#played==beforeClosed+1)
 local text=table.concat(logs)
 assert(text:find("rate=0.3 cutoff_ms=1500",1,true))
-assert(text:find("BRIGHTNESS_UNAVAILABLE",1,true) and text:find("brightness unavailable",1,true))
+assert(text:find("COLOR_UNAVAILABLE",1,true) and text:find("Color unavailable",1,true))
+assert(text:find("COLOR_SET input=0.50,0.50,0.50 instance_readback=ok",1,true))
+assert(text:find("modes=2,2,2",1,true) and text:find("Color vector missing",1,true))
 assert(text:find("field=StartVelocity",1,true) and text:find("parameter=TestVelocity",1,true))
 local _,inspections=text:gsub("STAFF_INSPECT_DONE","")
 assert(inspections==1)
@@ -227,4 +266,4 @@ for group, conflict, available, unavailable in [
         assert lua.eval(f"keys[Key.{name}] == nil"), (group, name)
     assert lua.eval(f'string.find(table.concat(logs), "{group}_UNAVAILABLE", 1, true)')
 
-print("VFX_BROWSER_POLICY_PASS: Lua 5.4, catalog, tuning lifecycle, safe brightness status, rate/cutoff bounds and key collisions")
+print("VFX_BROWSER_POLICY_PASS: Lua 5.4, catalog, tuning lifecycle, Color isolation and readback, rate/cutoff bounds and key collisions")

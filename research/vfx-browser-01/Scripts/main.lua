@@ -10,6 +10,8 @@ local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
 local STAFF_SPARK = ROOT.."skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 local SETTINGS_KEY = "NikichMods.MagicalScabbards.StaffSpark.v1"
+local COLOR_INPUTS = {1.0,0.75,0.50} -- First step is the untouched stock instance.
+local colorIndex, staffColorVerified = 1, false
 -- Independent unmodified keys; no Ctrl/Alt chords.
 local entries, selected = nil, 0
 local scalePercent = 50
@@ -278,6 +280,26 @@ local function assetFor(e)
     if not allowed then return nil,info end
     return o,info
 end
+local function reportColorMapping(distribution, location)
+    local ok, detail=pcall(function()
+        local function rgb(vector)
+            return ("%.3g,%.3g,%.3g"):format(vector.X,vector.Y,vector.Z)
+        end
+        return ("constant=%s input=%s..%s output=%s..%s"):format(rgb(distribution.Constant),
+            rgb(distribution.MinInput),rgb(distribution.MaxInput),rgb(distribution.MinOutput),rgb(distribution.MaxOutput))
+    end)
+    local modesOk, modes=pcall(function()
+        local value=distribution.ParamModes
+        if type(value)=="number" then return "first_only:"..tostring(value) end
+        if (type(value)=="table" or type(value)=="userdata")
+            and type(value[1])=="number" and type(value[2])=="number" and type(value[3])=="number" then
+            return ("%d,%d,%d"):format(value[1],value[2],value[3])
+        end
+        return "unexposed"
+    end)
+    log("COLOR_MAPPING",location.." "..(ok and detail or "range=unavailable")
+        .." modes="..(modesOk and modes or "unexposed"))
+end
 local function inspectStaffSpark(asset)
     local fields={"StartLocation","StartRadius","StartHeight","VelocityScale",
         "StartVelocity","StartVelocityRadial","Velocity","VelOverLife","Acceleration",
@@ -286,6 +308,7 @@ local function inspectStaffSpark(asset)
     local function reportModule(module, location)
         if not valid(module) then return end
         local class=full(module:GetClass())
+        local namedColor=false
         log("STAFF_MODULE",location.." class="..class.." enabled="..tostring(module.bEnabled))
         local reflection=module:Reflection()
         for _,key in ipairs(fields) do
@@ -295,15 +318,23 @@ local function inspectStaffSpark(asset)
                 local raw=module[key]
                 local distribution=raw.Distribution
                 local kind=valid(distribution) and full(distribution:GetClass()) or "unexposed"
-                local parameter=""
+                local parameter
                 if kind=="Class /Script/Engine.DistributionFloatParticleParameter"
                     or kind=="Class /Script/Engine.DistributionVectorParticleParameter" then
-                    parameter=" parameter="..distribution.ParameterName:ToString()
+                    parameter=distribution.ParameterName:ToString()
                 end
                 log("STAFF_DISTRIBUTION",("%s field=%s class=%s min=%s max=%s%s"):format(
-                    location,key,kind,tostring(raw.MinValue),tostring(raw.MaxValue),parameter))
+                    location,key,kind,tostring(raw.MinValue),tostring(raw.MaxValue),
+                    parameter and " parameter="..parameter or ""))
+                if class=="Class /Script/Engine.ParticleModuleColorScaleOverLife"
+                    and module.bEnabled==true and key=="ColorScaleOverLife" and parameter=="Color"
+                    and kind=="Class /Script/Engine.DistributionVectorParticleParameter" then
+                    namedColor=true
+                    reportColorMapping(distribution,location)
+                end
             end
         end
+        return namedColor
     end
     local function each(array, limit, visit)
         local count=array:GetArrayNum()
@@ -314,17 +345,47 @@ local function inspectStaffSpark(asset)
         end
     end
     log("STAFF_INSPECT","path="..STAFF_SPARK)
+    local emittersWithColor, complete=0,true
     each(asset.Emitters,10,function(emitter,i)
+        local activeLods=0
         each(emitter.LODLevels,6,function(lod,j)
             if lod.bEnabled~=false then
+                activeLods=activeLods+1
                 local tag=("emitter=%d lod=%d"):format(i,j)
                 log("STAFF_LOD",tag.." local_space="..tostring(lod.RequiredModule.bUseLocalSpace)
                     .." type="..tostring(full(lod.TypeDataModule)))
-                each(lod.Modules,32,function(module,k) reportModule(module,tag.." module="..k) end)
+                local found=false
+                each(lod.Modules,32,function(module,k)
+                    if reportModule(module,tag.." module="..k) then found=true end
+                end)
+                complete=complete and found
             end
         end)
+        if activeLods>0 then emittersWithColor=emittersWithColor+1 end
     end)
     log("STAFF_INSPECT_DONE","read-only")
+    return complete and emittersWithColor==2
+end
+local function setPreviewColor(component, factor)
+    assert(staffColorVerified,"staff Color distribution unverified")
+    local parameter=FName("Color",EFindName.FNAME_Find)
+    assert(parameter:ToString()=="Color","Color FName unavailable")
+    component:SetVectorParameter(parameter,{X=factor,Y=factor,Z=factor})
+    local params=component.InstanceParameters
+    local count=params:GetArrayNum()
+    assert(count<=32,"unexpected instance-parameter count")
+    for i=1,count do
+        assert(i<=params:GetArrayNum(),"instance parameter array changed")
+        local row=params[i]
+        if row.Name:ToString()=="Color" and row.ParamType==3 then -- PSPT_Vector
+            local rgb=row.Vector
+            assert(math.abs(rgb.X-factor)<0.0001 and math.abs(rgb.Y-factor)<0.0001
+                and math.abs(rgb.Z-factor)<0.0001,"Color vector readback mismatch")
+            log("COLOR_SET",("input=%.2f,%.2f,%.2f instance_readback=ok"):format(factor,factor,factor))
+            return
+        end
+    end
+    error("Color vector missing from owned component")
 end
 local function anchor(mesh)
     for _,socketName in ipairs({"scabbard_b","scabbard_a"}) do
@@ -364,8 +425,9 @@ local function preview(step, scaleDelta, staffTimingChanged)
         end
         local rate=isStaff and TIME_RATES[timeRateIndex] or 1.0
         local cutoffMs=isStaff and cutoffMsStaff or 1600
+        local colorLabel=colorIndex==1 and "stock" or ("%.2f"):format(COLOR_INPUTS[colorIndex])
         local title=("%02d/%02d  %s  scale=%.2f%s"):format(selected,#entries,e.label,size,
-            isStaff and ("  time=%.1f  cutoff=%.2fs"):format(rate,cutoffMs/1000) or "")
+            isStaff and ("  time=%.1f  cutoff=%.2fs  Color=%s"):format(rate,cutoffMs/1000,colorLabel) or "")
         message(title.." | checking...")
         local asset,info=assetFor(e)
         if not asset then
@@ -375,8 +437,9 @@ local function preview(step, scaleDelta, staffTimingChanged)
         end
         if isStaff and not inspectedStaffSpark then
             inspectedStaffSpark=true
-            local inspected,issue=pcall(inspectStaffSpark,asset)
-            if not inspected then log("STAFF_INSPECT_FAILED",tostring(issue):sub(1,240)) end
+            local inspected,result=pcall(inspectStaffSpark,asset)
+            staffColorVerified=inspected and result==true
+            if not inspected then log("STAFF_INSPECT_FAILED",tostring(result):sub(1,240)) end
         end
         alive=alive or static("KismetSystemLibrary","IsValid")
         spawn=spawn or static("GameplayStatics","SpawnEmitterAttached")
@@ -401,10 +464,11 @@ local function preview(step, scaleDelta, staffTimingChanged)
             if particle==item then clearParticle("watchdog") end
         end)
         assert(math.type(handle)=="integer" and IsValidDelayedActionHandle(handle),"watchdog unavailable")
+        if isStaff and colorIndex~=1 then setPreviewColor(c,COLOR_INPUTS[colorIndex]) end
         c:Activate(false)
         message(title.." | PLAY  "..socketName)
         log("PLAY",("id=%02d path=%s scale=%.2f rate=%.1f cutoff_ms=%d %s"):format(
-            selected,e.path,size,rate,cutoffMs,info))
+            selected,e.path,size,rate,cutoffMs,info)..(isStaff and " color="..colorLabel or ""))
     end)
     if not ok then
         log("FAILED",tostring(err):sub(1,300))
@@ -420,17 +484,19 @@ local function handleKey(action)
         if action=="TOGGLE" then
             if tuning then close(); return end
             tuning=true
-            log("TUNING","NumPad 4/6 effects, 7/9 speed, 1/3 cutoff, 2/8 brightness status; F2/F3 scale, F9 replay")
+            log("TUNING","NumPad 4/6 effects, 7/9 speed, 1/3 cutoff, 2/8 Color input; F2/F3 scale, F9 replay")
         elseif not tuning then
             return
         end
-        if action=="BRIGHTNESS" then
-            if entries and entries[selected] then
-                local e=entries[selected]
-                message(("%02d/%02d  %s | brightness unavailable"):format(selected,#entries,e.label))
-                log("BRIGHTNESS_UNAVAILABLE","separate light brightness has no verified instance parameter path="..e.path)
+        if action=="COLOR_DOWN" or action=="COLOR_UP" then
+            local e=entries and entries[selected]
+            if not e or e.path~=STAFF_SPARK or not staffColorVerified then
+                if e then message(("%02d/%02d  %s | Color unavailable"):format(selected,#entries,e.label)) end
+                log("COLOR_UNAVAILABLE","select verified Staff cast spark (id=02)")
+                return
             end
-            return
+            local delta=action=="COLOR_DOWN" and 1 or -1
+            colorIndex=math.max(1,math.min(#COLOR_INPUTS,colorIndex+delta))
         end
         local staffTiming = action=="SLOWER" or action=="FASTER"
             or action=="CUTOFF_SHORTER" or action=="CUTOFF_LONGER"
@@ -490,7 +556,7 @@ elseif bind("TUNING",{{"F4","TOGGLE"}}) then
     bind("NAVIGATION",{{"NUM_FOUR","PREVIOUS"},{"NUM_SIX","NEXT"}})
     bind("TIME",{{"NUM_SEVEN","SLOWER"},{"NUM_NINE","FASTER"}})
     bind("CUTOFF",{{"NUM_ONE","CUTOFF_SHORTER"},{"NUM_THREE","CUTOFF_LONGER"}})
-    bind("BRIGHTNESS",{{"NUM_TWO","BRIGHTNESS"},{"NUM_EIGHT","BRIGHTNESS"}})
+    bind("COLOR",{{"NUM_TWO","COLOR_DOWN"},{"NUM_EIGHT","COLOR_UP"}})
     bind("SCALE",{{"F2","SMALLER"},{"F3","LARGER"}})
     bind("REPLAY",{{"F9","REPLAY"}})
     log("ARMED","F4 opens/closes tuning; controls inside the mode only, no modifiers")
