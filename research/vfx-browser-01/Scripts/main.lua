@@ -4,7 +4,7 @@
 local catalog = require("catalog")
 local ROOT = "/Game/MainContent/Assets/fx/bp/"
 local WIDGET = "/Game/MainContent/Template/UMG/Debug/PostionItemUMG_BP.PostionItemUMG_BP_C"
-local HUD = "BlueprintGeneratedClass /Game/MainContent/Template/UMG/HUD/HUDMainUMG_BP.HUDMainUMG_BP_C"
+local HUD = "/Game/MainContent/Template/UMG/HUD/HUDMainUMG_BP.HUDMainUMG_BP_C"
 local HILDA = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_BP.hilda_BP_C"
 local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
@@ -44,13 +44,14 @@ local function hilda()
     local huds = FindAllOf("HUDMainUMG_BP_C") or {}
     assert(#huds<=8, "too many HUD candidates")
     for _,h in ipairs(huds) do
-        if full(h)==HUD and h:IsInViewport() then
+        local c=valid(h) and full(h:GetClass()) or nil
+        if c and c:match("^[^ ]+ (.+)$")==HUD and h:IsInViewport() then
             local pawn = h:GetOwningPlayerPawn()
             if full(valid(pawn) and pawn:GetClass())==HILDA and pawn.bHidden==false then
                 local mesh=pawn.Mesh
                 if full(valid(mesh) and mesh:GetClass())==MESH
                     and (full(mesh) or ""):match("%.CharacterMesh0$")
-                    and mesh:GetOwner():GetAddress()==pawn:GetAddress() then
+                    and valid(mesh:GetOwner()) and mesh:GetOwner():GetAddress()==pawn:GetAddress() then
                     assert(not found, "multiple gameplay HUDs")
                     found={hud=h,pawn=pawn,mesh=mesh}
                 end
