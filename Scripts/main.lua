@@ -3,10 +3,11 @@ local equipment = require("equipment")
 local outgoing = require("outgoing")
 local policy = require("reconcile")(250)
 local makeVisibility = require("visibility")
+local vfx = require("vfx")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
-local VERSION = "0.1.0"
+local VERSION = "0.1.1-test.1"
 local DEBUG_LOGGING = false
 
 local lastWarning
@@ -75,7 +76,9 @@ local function sample(ticket)
             retryAt, retryDelay = nil, nil
             log("WINDOW_START", ("ms=%.1f"):format(now))
         end
-        if policy.observe(snapshot, now, equipment.read) ~= "SUPPRESSED" then
+        local intent, preview, elapsed = policy.observe(snapshot, now, equipment.read)
+        if preview then vfx.preview(snapshot, elapsed) end
+        if intent ~= "SUPPRESSED" then
             retryAt, retryDelay = nil, nil
             return
         end
@@ -136,6 +139,7 @@ end
 
 local function stop()
     local clean = release("stop")
+    vfx.cleanup("stop")
     session = nil
     equipment.reset()
     if handle and (not IsValidDelayedActionHandle(handle) or CancelDelayedAction(handle)) then handle = nil end
@@ -202,6 +206,7 @@ local function initialize()
     RegisterLoadMapPreHook(function()
         loading = true
         release("load-map-pre")
+        vfx.cleanup("load-map-pre")
         equipment.reset()
     end)
     RegisterLoadMapPostHook(function() loading = false end)
@@ -210,7 +215,9 @@ local function initialize()
         local ok, err = pcall(function()
             local actor = param:get()
             local key = equipment.id(actor)
-            if key == "-" or not controller.tracksOwner(key) then return end
+            if key == "-" then return end
+            vfx.endPlay(key)
+            if not controller.tracksOwner(key) then return end
             local destroyed = reason:get() == 0 and actor:IsActorBeingDestroyed() == true
             if controller.endPlay(actor, key, destroyed) then release("owner-end-play") end
         end)

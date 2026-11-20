@@ -15,7 +15,7 @@ s.arm(5100); assert(s.hides == 0); s.tick(8100); assert(s.hides == 6)
 s.keys[8](); s.visible()
 s = fixture({quiet=true})
 assert(s.keys[7] == nil and s.keys[8] and #s.ticks == 1 and next(s.hooks))
-assert(s.has("[MagicalScabbards 0.1.0] INFO START"))
+assert(s.has("[MagicalScabbards 0.1.1-test.1] INFO START"))
 s.arm(0); s.tick(3000)
 assert(s.hides == 6 and s.has("HIDDEN targets=6"))
 assert(not s.has("WINDOW_START") and not s.has("CENSUS_BEGIN") and not s.has("ADMISSION"))
@@ -30,6 +30,46 @@ stale(); assert(s.hides == 12)
 s.loadPre(); s.visible(); s.tick(6200); assert(s.restores == 12)
 s.loadPost(); s.arm(6300); assert(s.hides == 12); s.tick(9300); assert(s.hides == 18)
 s.keys[8](); s.visible(); assert(not s.has("CLEANUP_PENDING"))
+
+-- The preview belongs to the same uninterrupted stowed window as hide.
+local previewTimes = {}
+local originalPreview = package.loaded.vfx.preview
+package.loaded.vfx.preview = function(_, elapsed)
+    previewTimes[#previewTimes+1] = elapsed
+end
+s = fixture({quiet=true})
+for t=0,2800,100 do s.tick(t) end
+s.tick(2899)
+assert(#previewTimes == 0 and s.hides == 0)
+s.tick(2900); s.tick(2999)
+assert(#previewTimes == 1 and previewTimes[1] == 2900 and s.hides == 0)
+s.draw() -- An already-started cosmetic burst does not commit the mask.
+s.hand = 4
+s.tick(3000)
+assert(#previewTimes == 1 and s.hides == 0)
+s.hand = 7
+s.arm(3100)
+assert(#previewTimes == 2 and s.hides == 0)
+s.tick(6100)
+assert(#previewTimes == 2 and s.hides == 6)
+s.keys[8](); s.visible()
+package.loaded.vfx.preview = originalPreview
+
+s = fixture({quiet=true, setup=function()
+    local find = StaticFindObject
+    local asset = "/Game/MainContent/Assets/fx/bp/skill/hilda/_staff/private/astral_missile_shoot.astral_missile_shoot"
+    StaticFindObject = function(path)
+        if path == asset then
+            return {IsValid=function() return true end, GetFullName=function() return "ParticleSystem " .. asset end}
+        end
+        return find(path)
+    end
+end})
+s.arm(0)
+assert(s.has("[MagicalScabbards VFX] FAILED") and s.hides == 0)
+s.tick(3000)
+assert(s.hides == 6 and not s.has("ERROR FAULT"))
+s.keys[8](); s.visible()
 
 -- Deferred autostart and key events both select EngineTick, never input-thread setters.
 local jobs = {}

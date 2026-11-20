@@ -1,9 +1,9 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- Policy only. The host supplies independently validated snapshots and time.
 local function new(maxGapMs)
-    local identity, since, last
+    local identity, since, last, previewed
     local function reset()
-        identity, since, last = nil, nil, nil
+        identity, since, last, previewed = nil, nil, nil, nil
     end
 
     local function observe(state, now, confirm)
@@ -13,17 +13,20 @@ local function new(maxGapMs)
             return "PASS-THROUGH"
         end
         if identity ~= state.identity or now < last or now - last > maxGapMs then
-            identity, since = state.identity, now
+            identity, since, previewed = state.identity, now, nil
         end
         last = now
-        if now - since < 3000 then return "PASS-THROUGH" end
+        local elapsed = now - since
+        local preview = elapsed >= 2900 and not previewed
+        if preview then previewed = true end
+        if elapsed < 3000 then return "PASS-THROUGH", preview, elapsed end
 
         local fresh = confirm()
         if fresh.phase ~= "STOWED" or fresh.identity ~= identity then
             reset()
             return "PASS-THROUGH"
         end
-        return "SUPPRESSED" -- Intent only; no write or ownership is implied.
+        return "SUPPRESSED", preview, elapsed -- Intent only; no write or ownership is implied.
     end
 
     return {observe = observe, reset = reset}
