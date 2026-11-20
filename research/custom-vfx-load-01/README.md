@@ -1,6 +1,6 @@
 # Custom VFX asset-load probe 01 — research only
 
-**Status:** SOURCE PREPARED, **NO GAME PASS**, **NO COOKED ASSET BUILT**, **NOT INSTALLED**. Do not publish as a test/release version. Target is the user's installed Asterigos Steam 1.09 (build 12996889), Windows x64, UE4.27, UE4SS 3.0.1-1181-g83330635.
+**Status (2026-11-20): BLOCKED at authoring/cook.** Source prepared at `475c2d1`. No fixture built, no installation, no game run. Target is the user's installed Asterigos Steam 1.09 (build 12996889), Windows x64, UE4.27, UE4SS 3.0.1-1181-g83330635.
 
 **Goal:** distinguish three independent facts: (a) stock cooked object can be opened by `LoadAsset`, (b) newly authored asset is mounted at a separate unique package path, and (c) UE4SS can open it. A positive control alone does not prove (b)/(c). A negative result does not by itself identify whether cooking, package path, mount, engine-version compatibility, IoStore, or load timing failed.
 
@@ -10,6 +10,15 @@
 - Stock asset-loading is a separate question from mounting a new asset. UE4SS declares `LoadAsset(path)` **game-thread only**. Engine UE4.27 cooking should target the installed platform.
 - UE4SS `BPModLoaderMod` has a known `LogicMods` .pak pipeline, but it does not by itself prove mounting of this game's custom IoStore trio. Investigate the actual loaded modules and supported mounting before selecting the packaging route. **Do not change the EXE, enable arbitrary native loaders, overwrite stock paths or bypass encrypted files automatically.**
 - Asterigos has previously installed asset-replacement packages; these demonstrate historical override packaging, **not** loading new uniquely named Niagara assets into the running game.
+
+## Local preflight result
+
+- Steam manifest reports build `12996889`. The existing UE4SS log identifies `83330635`. The base game has `pakchunk0-WindowsNoEditor.pak/.utoc/.ucas`.
+- The Epic engine installation manifest and UE4 engine registrations were absent in the checked locations. The editor, editor commandlet, UnrealPak and RunUAT were not found on PATH or in the checked installation, tool and project directories. There is no verified local UE4.27 Windows Niagara authoring and cooking toolchain. [Epic UE4.27 content cooking](https://dev.epicgames.com/documentation/en-us/unreal-engine/content-cooking?application_version=4.27)
+- Local `retoc_cli 0.1.5` runs and advertises `to-zen --version UE4_27`, taking a directory or .pak and producing a .utoc. Its read-only `info` command recognized the installed ProfileRender override as an indexed `PartitionSize` container with an `Initial` header and mount point `../../../`. That verifies access to an IoStore tool and identifies an existing override format. Cooking Niagara and registering a new unique package with the game's asset registry remain unverified. [retoc](https://github.com/trumank/retoc) · [ProfileRender evidence](https://github.com/NikichMods/ProfileRender/blob/main/docs/VERIFIED_RUNTIME.md)
+- The test stopped before authoring. The expected object path `/Game/NikichMods/MagicalScabbards/VFX/NS_VFX_LoadProbe.NS_VFX_LoadProbe` remains the fixture contract. No cooked package, mount log or test log exists. Both `LoadAsset` outcomes are **NOT RUN**.
+
+To reopen this test, first locate a usable UE4.27 editor and Windows cooker or obtain one verifiable matching Windows-cooked Niagara fixture. Then isolate package discovery and AssetRegistry registration before running the prepared Lua probe. Until that prerequisite is available, the bounded fallback in the design is one stock parameterized effect.
 
 ## Minimal custom fixture
 
