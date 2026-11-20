@@ -228,8 +228,12 @@ local function finite(asset)
                 local req=lod.RequiredModule
                 assert(valid(req),"required module unavailable")
                 local loops=req.EmitterLoops
-                if type(loops)~="number" or loops<1 then
-                    return false,"looping-or-unknown-emitter-"..i.." LOD-"..j
+                local duration=req.EmitterDuration
+                if type(loops)~="number" or loops~=1 then
+                    return false,"not-one-shot-emitter-"..i.." LOD-"..j
+                end
+                if type(duration)~="number" or duration<0 or duration>2.5 then
+                    return false,"long-or-unknown-duration-emitter-"..i.." LOD-"..j
                 end
                 inspected=inspected+1
             end
