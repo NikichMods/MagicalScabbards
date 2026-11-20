@@ -7,7 +7,7 @@ local vfx = require("vfx")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
-local VERSION = "0.1.1-test.1"
+local VERSION = "0.1.1-test.2"
 local DEBUG_LOGGING = false
 
 local lastWarning

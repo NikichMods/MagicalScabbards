@@ -15,7 +15,7 @@ s.arm(5100); assert(s.hides == 0); s.tick(8100); assert(s.hides == 6)
 s.keys[8](); s.visible()
 s = fixture({quiet=true})
 assert(s.keys[7] == nil and s.keys[8] and #s.ticks == 1 and next(s.hooks))
-assert(s.has("[MagicalScabbards 0.1.1-test.1] INFO START"))
+assert(s.has("[MagicalScabbards 0.1.1-test.2] INFO START"))
 s.arm(0); s.tick(3000)
 assert(s.hides == 6 and s.has("HIDDEN targets=6"))
 assert(not s.has("WINDOW_START") and not s.has("CENSUS_BEGIN") and not s.has("ADMISSION"))
@@ -55,12 +55,82 @@ assert(#previewTimes == 2 and s.hides == 6)
 s.keys[8](); s.visible()
 package.loaded.vfx.preview = originalPreview
 
+-- A resident Staff cast spark uses only the new owned component and leaves mask timing intact.
+local sparkPath = "/Game/MainContent/Assets/fx/bp/skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
+local sparks, watchdogs = {}, {}
+s = fixture({quiet=true, setup=function(state)
+    package.loaded.vfx = nil
+    local function object(name)
+        return {IsValid=function(self) return not self.dead end,
+            GetFullName=function() return name end, GetAddress=function(self) return tostring(self) end}
+    end
+    local function api(class, method, callback)
+        local base = "/Script/Engine."
+        local path = base .. class .. ":" .. method
+        local cdo = base .. "Default__" .. class
+        state.objects[cdo] = object(class .. " " .. cdo)
+        local fn = object("Function " .. path)
+        fn.GetFunctionFlags = function() return 0x400 end
+        state.objects[path] = setmetatable(fn, {__call=function(_, receiver, ...)
+            assert(receiver == state.objects[cdo])
+            return callback(...)
+        end})
+    end
+    local asset = object("ParticleSystem " .. sparkPath)
+    state.objects[sparkPath] = asset
+    FName = function(name) return {ToString=function() return name end} end
+    EFindName = {FNAME_Find=0}
+    local mesh = state.objects["pawn"].Mesh
+    mesh.DoesSocketExist = function(_, socket) return socket:ToString()=="scabbard_b" end
+    api("KismetSystemLibrary", "IsValid", function(value) return value and value:IsValid() end)
+    api("GameplayStatics", "SpawnEmitterAttached", function(template, parent, socket, _, _, scale,
+            attachment, autoDestroy, pooling, autoActivate)
+        assert(template==asset and parent==mesh and socket:ToString()=="scabbard_b")
+        assert(scale.X==0.50 and scale.Y==0.50 and scale.Z==0.50 and attachment==0)
+        assert(autoDestroy and pooling==0 and autoActivate==false)
+        local c = object("Component pawn.spark")
+        local class = object("Class /Script/Engine.ParticleSystemComponent")
+        c.Template, c.CustomTimeDilation = template, 1
+        c.GetClass = function() return class end
+        c.GetAttachParent = function() return parent end
+        c.GetAttachSocketName = function() return socket end
+        c.K2_DestroyComponent = function(self, owner) assert(self==owner); self.dead=true end
+        c.Activate = function(self, reset)
+            assert(self.CustomTimeDilation==0.3 and reset==false and #watchdogs==#sparks)
+            self.activated = true
+        end
+        state.objects["pawn.spark"] = c
+        sparks[#sparks+1] = c
+        return c
+    end)
+    ExecuteInGameThreadWithDelay = function(ms, callback)
+        assert(ms==1500)
+        watchdogs[#watchdogs+1] = callback
+        return 100+#watchdogs
+    end
+    local isDelayed = IsValidDelayedActionHandle
+    IsValidDelayedActionHandle = function(id) return id > 100 or isDelayed(id) end
+end})
+s.arm(0)
+assert(#sparks==1 and sparks[1].activated and s.hides==0)
+s.tick(3000)
+assert(s.hides==6)
+watchdogs[1]()
+assert(sparks[1].dead and s.restores==0)
+s.draw(); s.visible()
+s.arm(3100)
+assert(#sparks==2 and sparks[2].activated)
+watchdogs[1]()
+assert(not sparks[2].dead)
+s.keys[8](); s.visible()
+assert(sparks[2].dead and not s.has("CLEANUP_PENDING"))
+
 s = fixture({quiet=true, setup=function()
+    package.loaded.vfx = nil
     local find = StaticFindObject
-    local asset = "/Game/MainContent/Assets/fx/bp/skill/hilda/_staff/private/astral_missile_shoot.astral_missile_shoot"
     StaticFindObject = function(path)
-        if path == asset then
-            return {IsValid=function() return true end, GetFullName=function() return "ParticleSystem " .. asset end}
+        if path == sparkPath then
+            return {IsValid=function() return true end, GetFullName=function() return "ParticleSystem " .. sparkPath end}
         end
         return find(path)
     end

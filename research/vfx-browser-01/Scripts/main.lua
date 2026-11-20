@@ -10,18 +10,18 @@ local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
 local STAFF_SPARK = ROOT.."skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 -- Independent unmodified keys; no Ctrl/Alt chords.
-local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
 local entries, selected = nil, 0
-local scalePercent = 40
+local scalePercent = 50
 -- Staff cast spark only: change preview animation rate, never a stock asset.
 local TIME_RATES = {0.2,0.3,0.5}
 local timeRateIndex = 2 -- initial 0.3
 -- Real-time browser cleanup cutoff, independently selectable from particle dilation.
 -- Integer milliseconds avoid rounding drift at quarter-second steps.
 local CUTOFF_MIN_MS, CUTOFF_MAX_MS, CUTOFF_STEP_MS = 250, 3000, 250
-local cutoffMsStaff = 1000
+local cutoffMsStaff = 1500
 local ui, labelRef, particle = nil, nil, nil
 local uiFault, particleFault, busy, disabled = false, false, false, false
+local tuning = false
 local alive, spawn = nil, nil
 local inspectedStaffSpark = false
 
@@ -184,11 +184,12 @@ local function clearParticle(reason)
     return true
 end
 local function close()
+    tuning = false
     local p=clearParticle("user-or-map")
     local u=clearUI()
     if p and u then
         entries,selected=nil,0
-        log("CLOSED","press F7 to open with a fresh loaded-assets snapshot")
+        log("CLOSED","press F4 to open with a fresh loaded-assets snapshot")
     end
 end
 local function loadedPaths()
@@ -269,7 +270,8 @@ end
 local function inspectStaffSpark(asset)
     local fields={"StartLocation","StartRadius","StartHeight","VelocityScale",
         "StartVelocity","StartVelocityRadial","Velocity","VelOverLife","Acceleration",
-        "StartSize","SizeScale","LifeMultiplier","LifeTime","BrightnessOverLife","RadiusScale"}
+        "StartSize","SizeScale","LifeMultiplier","LifeTime","BrightnessOverLife","RadiusScale",
+        "ColorOverLife","AlphaOverLife","ColorScaleOverLife","AlphaScaleOverLife"}
     local function reportModule(module, location)
         if not valid(module) then return end
         local class=full(module:GetClass())
@@ -333,7 +335,7 @@ local function preview(step, scaleDelta)
         createUI(context)
         if not clearParticle("switch") then return end
         if selected==0 then
-            selected=step<0 and #entries or 1
+            selected=2 -- Fixed catalog entry: Staff cast spark.
         elseif step~=0 then
             selected=((selected-1+step) % #entries)+1
         end
@@ -392,18 +394,34 @@ local function preview(step, scaleDelta)
     end
     busy=false
 end
-local function selectCandidate(action)
+local function handleKey(action)
     if disabled then return end
     local step = action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0
     local scaleDelta = action=="SMALLER" and -5 or action=="LARGER" and 5 or 0
     local ok,err=pcall(ExecuteInGameThread,function()
-        if action=="TIME" or action=="CUTOFF_SHORTER" or action=="CUTOFF_LONGER" then
+        if action=="TOGGLE" then
+            if tuning then close(); return end
+            tuning=true
+            log("TUNING","NumPad 4/6 effects, 7/9 speed, 1/3 cutoff, 2/8 brightness status; F2/F3 scale, F9 replay")
+        elseif not tuning then
+            return
+        end
+        if action=="BRIGHTNESS" then
+            if entries and entries[selected] then
+                local e=entries[selected]
+                message(("%02d/%02d  %s | brightness unavailable"):format(selected,#entries,e.label))
+                log("BRIGHTNESS_UNAVAILABLE","no verified instance brightness parameter path="..e.path)
+            end
+            return
+        end
+        if action=="SLOWER" or action=="FASTER" or action=="CUTOFF_SHORTER" or action=="CUTOFF_LONGER" then
             if not entries or not entries[selected] or entries[selected].path~=STAFF_SPARK then
                 log("STAFF_CONTROL_SKIPPED","select Staff cast spark (id=02) first action="..action)
                 return
             end
-            if action=="TIME" then
-                timeRateIndex=(timeRateIndex % #TIME_RATES)+1
+            if action=="SLOWER" or action=="FASTER" then
+                local delta=action=="SLOWER" and -1 or 1
+                timeRateIndex=math.max(1,math.min(#TIME_RATES,timeRateIndex+delta))
             else
                 local delta=action=="CUTOFF_SHORTER" and -CUTOFF_STEP_MS or CUTOFF_STEP_MS
                 cutoffMsStaff=math.max(CUTOFF_MIN_MS,math.min(CUTOFF_MAX_MS,cutoffMsStaff+delta))
@@ -415,6 +433,23 @@ local function selectCandidate(action)
     end,EGameThreadMethod.EngineTick)
     if not ok then log("DISPATCH_FAILED",tostring(err):sub(1,200));disabled=true end
 end
+local function bind(group, bindings)
+    local ready=false
+    local ok,err=pcall(function()
+        for _,binding in ipairs(bindings) do
+            local key=Key[binding[1]]
+            assert(type(key)=="number" and not IsKeyBindRegistered(key),binding[1].." unavailable")
+        end
+        for _,binding in ipairs(bindings) do
+            RegisterKeyBind(Key[binding[1]],function()
+                if ready and (tuning or binding[2]=="TOGGLE") then handleKey(binding[2]) end
+            end)
+        end
+        ready=true
+    end)
+    if not ok then log(group.."_UNAVAILABLE",tostring(err):sub(1,220)) end
+    return ok
+end
 local ok,err=pcall(function()
     assert(EngineTickAvailable and EGameThreadMethod and EGameThreadMethod.EngineTick,"game thread unavailable")
     assert(type(ExecuteInGameThread)=="function" and type(ExecuteInGameThreadWithDelay)=="function"
@@ -423,50 +458,20 @@ local ok,err=pcall(function()
         and type(FindAllOf)=="function" and type(StaticConstructObject)=="function"
         and type(RegisterLoadMapPreHook)=="function","required UE4SS API missing")
     assert(FName and EFindName and FText and EObjectFlags and EObjectFlags.RF_Transient,"UMG/FName unavailable")
-    for _,pair in ipairs(KEYS) do
-        assert(pair[1] and not IsKeyBindRegistered(pair[1]),
-            "unmodified research key occupied: "..pair[2])
-    end
     RegisterLoadMapPreHook(function()
         local checked,problem=pcall(close)
         if not checked then log("MAP_CLEANUP_FAULT",tostring(problem):sub(1,220)) end
     end)
-    for _,pair in ipairs(KEYS) do
-        RegisterKeyBind(pair[1],function() selectCandidate(pair[2]) end)
-    end
 end)
-if ok then
-    log("ARMED","F6 previous / F7 next / F9 replay; no modifiers")
-    local scaleReady=false
-    local scaleOk,scaleErr=pcall(function()
-        assert(Key.F2 and Key.F3 and not IsKeyBindRegistered(Key.F2) and not IsKeyBindRegistered(Key.F3),
-            "F2/F3 unavailable")
-        RegisterKeyBind(Key.F2,function() if scaleReady then selectCandidate("SMALLER") end end)
-        RegisterKeyBind(Key.F3,function() if scaleReady then selectCandidate("LARGER") end end)
-        scaleReady=true
-    end)
-    if scaleOk then log("SCALE_READY","F2 smaller / F3 larger")
-    else log("SCALE_UNAVAILABLE",tostring(scaleErr):sub(1,220)) end
-    local timeReady=false
-    local timeOk,timeErr=pcall(function()
-        assert(Key.F4 and not IsKeyBindRegistered(Key.F4),"F4 unavailable")
-        RegisterKeyBind(Key.F4,function() if timeReady then selectCandidate("TIME") end end)
-        timeReady=true
-    end)
-    if timeOk then log("TIME_READY","F4 cycles 0.3 -> 0.5 -> 0.2 -> 0.3 on Staff cast spark only")
-    else log("TIME_UNAVAILABLE",tostring(timeErr):sub(1,220)) end
-    -- Optional as a pair: a collision must not disable F6/F7/F9, F2/F3 or F4.
-    local cutoffReady=false
-    local cutoffOk,cutoffErr=pcall(function()
-        assert(Key.F10 and Key.F11 and not IsKeyBindRegistered(Key.F10)
-            and not IsKeyBindRegistered(Key.F11),"F10/F11 unavailable")
-        RegisterKeyBind(Key.F10,function() if cutoffReady then selectCandidate("CUTOFF_SHORTER") end end)
-        RegisterKeyBind(Key.F11,function() if cutoffReady then selectCandidate("CUTOFF_LONGER") end end)
-        cutoffReady=true
-    end)
-    if cutoffOk then log("CUTOFF_READY","F10 -250ms / F11 +250ms, 250..3000ms, Staff spark only")
-    else log("CUTOFF_UNAVAILABLE",tostring(cutoffErr):sub(1,220)) end
-else
+if not ok then
     disabled=true
     log("UNAVAILABLE",tostring(err):sub(1,300))
+elseif bind("TUNING",{{"F4","TOGGLE"}}) then
+    bind("NAVIGATION",{{"NUM_FOUR","PREVIOUS"},{"NUM_SIX","NEXT"}})
+    bind("TIME",{{"NUM_SEVEN","SLOWER"},{"NUM_NINE","FASTER"}})
+    bind("CUTOFF",{{"NUM_ONE","CUTOFF_SHORTER"},{"NUM_THREE","CUTOFF_LONGER"}})
+    bind("BRIGHTNESS",{{"NUM_TWO","BRIGHTNESS"},{"NUM_EIGHT","BRIGHTNESS"}})
+    bind("SCALE",{{"F2","SMALLER"},{"F3","LARGER"}})
+    bind("REPLAY",{{"F9","REPLAY"}})
+    log("ARMED","F4 opens/closes tuning; controls inside the mode only, no modifiers")
 end

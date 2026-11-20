@@ -3,7 +3,7 @@
 Does not claim the UMG/particle host actually works in Steam 1.09.
 """
 from pathlib import Path
-from lupa import LuaRuntime
+from lupa.lua54 import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "research" / "vfx-browser-01" / "Scripts"
@@ -16,28 +16,8 @@ for file in (BASE / "main.lua", BASE / "catalog.lua"):
         raise AssertionError(f"Lua 5.4 compile failure for {file.name}: {result!r}")
     assert callable(result), f"no callable Lua chunk: {file.name}"
 
-# Navigation has three required keys; scale, time-rate and cutoff are independent optional controls.
 main_text = (BASE / "main.lua").read_text(encoding="utf-8")
-assert 'local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
-assert 'action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0' in main_text
-assert "selectCandidate(pair[2])" in main_text
-assert "RegisterKeyBind(pair[1]" in main_text
-assert "IsKeyBindRegistered(pair[1])" in main_text
-assert "preview(step,scaleDelta)" in main_text
 assert "ModifierKey." not in main_text
-assert 'local TIME_RATES = {0.2,0.3,0.5}' in main_text
-assert 'local timeRateIndex = 2' in main_text
-assert 'c.CustomTimeDilation=rate' in main_text
-assert 'math.abs(c.CustomTimeDilation-rate)' in main_text
-assert 'cutoffMs=isStaff and cutoffMsStaff or 1600' in main_text
-assert 'local CUTOFF_MIN_MS, CUTOFF_MAX_MS, CUTOFF_STEP_MS = 250, 3000, 250' in main_text
-assert 'local cutoffMsStaff = 1000' in main_text
-assert 'RegisterKeyBind(Key.F10' in main_text and 'RegisterKeyBind(Key.F11' in main_text
-assert 'CUTOFF_UNAVAILABLE' in main_text and 'CUTOFF_SET' in main_text
-assert 'RegisterKeyBind(Key.F4' in main_text
-# A zero step in preview must preserve the currently selected index for replay.
-assert "elseif step~=0 then" in main_text
-assert "selected=((selected-1+step) % #entries)+1" in main_text
 
 catalog = lua.execute((BASE / "catalog.lua").read_text(encoding="utf-8"))
 build = catalog["build"]
@@ -79,7 +59,8 @@ for bad in (0, 21, -1):
 lua.globals().browserCatalog = catalog
 lua.execute(r"""
 package.loaded.catalog=browserCatalog
-Key={F2=2,F3=3,F4=4,F6=6,F7=7,F9=9,F10=10,F11=11}
+Key={F2=2,F3=3,F4=4,F9=9,NUM_ONE=97,NUM_TWO=98,NUM_THREE=99,NUM_FOUR=100,
+    NUM_SIX=102,NUM_SEVEN=103,NUM_EIGHT=104,NUM_NINE=105}
 EngineTickAvailable=true
 EGameThreadMethod={EngineTick=1}
 EObjectFlags={RF_Transient=1}
@@ -115,9 +96,9 @@ local function api(class, method, callback)
     db["/Script/Engine.Default__"..class]=object(class.." CDO")
 end
 api("KismetSystemLibrary","IsValid",function(o) return o.alive end)
-local entries=browserCatalog.build({})
+catalogEntries=browserCatalog.build({})
 for i=1,2 do
-    local path=entries[i].path
+    local path=catalogEntries[i].path
     db[path]=object("ParticleSystem "..path)
     local required=object("Required module")
     required.EmitterLoops,required.EmitterDuration=1,1
@@ -163,7 +144,7 @@ function ExecuteInGameThreadWithDelay(ms)
     return 1
 end
 function IsValidDelayedActionHandle() return true end
-function RegisterLoadMapPreHook() end
+function RegisterLoadMapPreHook(callback) loadMap=callback end
 function IsKeyBindRegistered() return false end
 function RegisterKeyBind(key, callback) keys[key]=callback end
 function print(line) logs[#logs+1]=line end
@@ -171,63 +152,62 @@ function print(line) logs[#logs+1]=line end
 lua.execute(main_text)
 lua.execute("""
 local function last() return played[#played] end
-keys[7](); assert(last().scale==0.40)
-local first=last().asset
-keys[2](); assert(last().asset==first and last().scale==0.35)
-keys[3](); assert(last().asset==first and last().scale==0.40)
-for i=1,10 do keys[2]() end
-assert(last().scale==0.10)
-keys[7](); assert(last().asset~=first and last().scale==0.10)
+local function press(key) keys[Key[key]]() end
+press("NUM_SIX"); press("F9"); assert(#played==0)
+press("F4")
 local second=last().asset
-assert(last().rate==0.3 and delays[#delays]==1000)
--- Cutoff is independently adjustable while keeping rate, scale, asset and selection.
-keys[10](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==750)
-keys[10](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==500)
-keys[11](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==750)
-keys[11](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==1000)
-keys[4](); assert(last().asset==second and last().rate==0.5 and delays[#delays]==1000)
-keys[4](); assert(last().asset==second and last().rate==0.2 and delays[#delays]==1000)
-keys[4](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==1000)
-for i=1,12 do keys[3]() end
+assert(second:GetFullName()=="ParticleSystem "..catalogEntries[2].path)
+assert(last().scale==0.50 and last().rate==0.3 and delays[#delays]==1500)
+press("NUM_ONE")
+assert(last().asset==second and last().rate==0.3 and delays[#delays]==1250)
+press("NUM_THREE"); assert(delays[#delays]==1500)
+press("NUM_SEVEN"); assert(last().rate==0.2 and delays[#delays]==1500)
+press("NUM_SEVEN"); assert(last().rate==0.2)
+press("NUM_NINE"); assert(last().rate==0.3)
+press("NUM_NINE"); assert(last().rate==0.5)
+press("NUM_NINE"); assert(last().rate==0.5)
+press("F2"); assert(last().scale==0.45)
+for i=1,12 do press("F3") end
 assert(last().asset==second and last().scale==0.60)
-keys[9](); assert(last().asset==second and last().scale==0.60)
--- Lower and upper bounds; every bounded change restarts the same component.
-for i=1,30 do keys[10]() end
+press("F9"); assert(last().asset==second and last().scale==0.60)
+for i=1,20 do press("NUM_ONE") end
 assert(last().asset==second and delays[#delays]==250)
-keys[9](); assert(last().asset==second and delays[#delays]==250)
-for i=1,30 do keys[11]() end
+for i=1,20 do press("NUM_THREE") end
 assert(last().asset==second and delays[#delays]==3000)
-keys[9](); assert(last().asset==second and delays[#delays]==3000)
-keys[6](); assert(last().asset==first and last().scale==0.60)
+local beforeBrightness=#played
+press("NUM_TWO"); press("NUM_EIGHT")
+assert(#played==beforeBrightness and delays[#delays]==3000)
+press("NUM_FOUR")
+assert(last().asset:GetFullName()=="ParticleSystem "..catalogEntries[1].path)
 assert(delays[#delays]==1600 and last().rate==1.0)
--- Controls must not mutate the selected non-Staff candidate, or the staff setting.
-local oldPlayCount=#played
-keys[10](); keys[11]()
-assert(#played==oldPlayCount and delays[#delays]==1600)
-keys[7](); assert(last().asset==second and delays[#delays]==3000)
-assert(table.concat(logs):find("scale=0.60",1,true))
-assert(table.concat(logs):find("TIME_SET",1,true))
-assert(table.concat(logs):find("rate=0.3 cutoff_ms=1000",1,true))
-assert(table.concat(logs):find("CUTOFF_SET",1,true))
-assert(table.concat(logs):find("cutoff_ms=250",1,true))
-assert(table.concat(logs):find("cutoff_ms=3000",1,true))
+local beforeOther=#played
+press("NUM_ONE"); press("NUM_THREE"); press("NUM_SEVEN"); press("NUM_NINE")
+assert(#played==beforeOther)
+press("NUM_SIX"); assert(last().asset==second and delays[#delays]==3000)
+press("F4")
+local beforeClosed=#played
+press("NUM_SIX"); press("F9"); assert(#played==beforeClosed)
+press("F4"); assert(#played==beforeClosed+1 and last().asset==second)
+loadMap()
+press("F9"); assert(#played==beforeClosed+1)
 local text=table.concat(logs)
+assert(text:find("rate=0.3 cutoff_ms=1500",1,true))
+assert(text:find("BRIGHTNESS_UNAVAILABLE",1,true) and text:find("brightness unavailable",1,true))
 assert(text:find("field=StartVelocity",1,true) and text:find("parameter=TestVelocity",1,true))
 local _,inspections=text:gsub("STAFF_INSPECT_DONE","")
 assert(inspections==1)
 """)
-lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==3 end")
-lua.execute(main_text)
-lua.execute("""
-assert(keys[6] and keys[7] and keys[9] and keys[4] and keys[10] and keys[11]
-    and not keys[2] and not keys[3])
-assert(table.concat(logs):find("SCALE_UNAVAILABLE",1,true))
-""")
-lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==11 end")
-lua.execute(main_text)
-lua.execute("""
-assert(keys[6] and keys[7] and keys[9] and keys[2] and keys[3] and keys[4]
-    and not keys[10] and not keys[11])
-assert(table.concat(logs):find("CUTOFF_UNAVAILABLE",1,true))
-""")
-print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, staff time-rates and adjustable cutoff with boundary and collision checks")
+for group, conflict, available, unavailable in [
+    ("SCALE", "F3", ("F4", "F9", "NUM_ONE", "NUM_THREE"), ("F2", "F3")),
+    ("CUTOFF", "NUM_THREE", ("F4", "F9", "NUM_TWO", "NUM_SIX"), ("NUM_ONE", "NUM_THREE")),
+    ("TUNING", "F4", (), ("F4", "F9", "NUM_ONE", "NUM_SIX")),
+]:
+    lua.execute(f"keys,logs={{}},{{}}; function IsKeyBindRegistered(key) return key==Key.{conflict} end")
+    lua.execute(main_text)
+    for name in available:
+        assert lua.eval(f"keys[Key.{name}] ~= nil"), (group, name)
+    for name in unavailable:
+        assert lua.eval(f"keys[Key.{name}] == nil"), (group, name)
+    assert lua.eval(f'string.find(table.concat(logs), "{group}_UNAVAILABLE", 1, true)')
+
+print("VFX_BROWSER_POLICY_PASS: Lua 5.4, catalog, tuning lifecycle, safe brightness status, rate/cutoff bounds and key collisions")

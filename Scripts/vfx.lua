@@ -1,7 +1,8 @@
 -- SPDX-License-Identifier: MPL-2.0
 local equipment = require("equipment")
-local ASSET = "/Game/MainContent/Assets/fx/bp/skill/hilda/_staff/private/astral_missile_shoot.astral_missile_shoot"
+local ASSET = "/Game/MainContent/Assets/fx/bp/skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
+local SCALE, RATE, CUTOFF_MS = 0.50, 0.3, 1500
 local owned, sessionFault, reportedMiss
 local alive, spawn
 
@@ -46,40 +47,33 @@ end
 local function play(snapshot, elapsed)
     local asset = StaticFindObject(ASSET)
     if equipment.name(asset) ~= "ParticleSystem " .. ASSET then
-        if not reportedMiss then log("MISS", "Astral staff asset is not resident") end
+        if not reportedMiss then log("MISS", "stf01_spark is not resident") end
         reportedMiss = true
         return
     end
     alive = alive or static("KismetSystemLibrary", "IsValid")
     assert(alive(snapshot.pawn) and alive(snapshot.mesh) and alive(asset), "invalid attachment context")
     local socket = FName("scabbard_b", EFindName.FNAME_Find)
-    local fade = FName("Fade", EFindName.FNAME_Find)
-    assert(socket:ToString() == "scabbard_b" and snapshot.mesh:DoesSocketExist(socket)
-        and fade:ToString() == "Fade", "socket or parameter unavailable")
+    assert(socket:ToString() == "scabbard_b" and snapshot.mesh:DoesSocketExist(socket), "socket unavailable")
     spawn = spawn or static("GameplayStatics", "SpawnEmitterAttached")
     local c = spawn(asset, snapshot.mesh, socket, {X=0,Y=0,Z=0}, {Pitch=0,Yaw=0,Roll=0},
-        {X=0.7,Y=0.7,Z=0.7}, 0, true, 0, false)
+        {X=SCALE,Y=SCALE,Z=SCALE}, 0, true, 0, false)
     assert(alive(c) and equipment.name(c:GetClass()) == PSC, "spawn result unverified")
     local ref = {path=assert(equipment.name(c):match("^[^ ]+ (.+)$")), id=equipment.id(c),
         pawn=equipment.id(snapshot.pawn)}
     owned = ref
     assert(same(c.Template, asset) and same(c:GetAttachParent(), snapshot.mesh)
         and c:GetAttachSocketName():ToString() == "scabbard_b", "spawn attachment mismatch")
-    local handle = ExecuteInGameThreadWithDelay(1600, function()
+    local handle = ExecuteInGameThreadWithDelay(CUTOFF_MS, function()
         if owned == ref then cleanup("watchdog") end
     end)
     assert(math.type(handle) == "integer" and IsValidDelayedActionHandle(handle), "watchdog unavailable")
-    c:SetFloatParameter(fade, 0.45)
-    local params, found = c.InstanceParameters, false
-    local count = params:GetArrayNum()
-    for i = 1, count do
-        assert(i <= params:GetArrayNum(), "instance parameter array changed")
-        local row = params[i]
-        if row.Name:ToString() == "Fade" then found = math.abs(row.Scalar - 0.45) < 0.0001; break end
-    end
-    assert(found, "Fade instance readback failed")
+    assert(type(c.CustomTimeDilation) == "number", "PSC CustomTimeDilation unavailable")
+    c.CustomTimeDilation = RATE
+    assert(math.abs(c.CustomTimeDilation - RATE) < 0.0001, "PSC CustomTimeDilation readback failed")
     c:Activate(false)
-    log("ACTIVATED", ("stowed_ms=%.1f socket=scabbard_b fade=0.45 scale=0.70"):format(elapsed))
+    log("ACTIVATED", ("stowed_ms=%.1f asset=stf01_spark socket=scabbard_b scale=%.2f rate=%.1f cutoff_ms=%d")
+        :format(elapsed, SCALE, RATE, CUTOFF_MS))
 end
 
 return {
