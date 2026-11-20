@@ -7,7 +7,7 @@ local vfx = require("vfx")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
-local VERSION = "0.1.1-test.3"
+local VERSION = "0.1.1-test.4"
 local DEBUG_LOGGING = false
 
 local lastWarning
@@ -164,6 +164,7 @@ local function start()
     local ticket = {}
     lastNote, lastWarning = nil, nil
     controller = makeVisibility(equipment, function(c, value) c:SetVisibility(value, false) end, log)
+    vfx.reset("start")
     session = ticket
     for _, entry in ipairs({{VIS, "visible"}, {HIDDEN, "hidden"}}) do
         local path, channel = entry[1], entry[2]
@@ -218,7 +219,7 @@ local function initialize()
     RegisterLoadMapPreHook(function()
         loading = true
         release("load-map-pre")
-        vfx.cleanup("load-map-pre")
+        vfx.reset("load-map-pre")
         equipment.reset()
     end)
     RegisterLoadMapPostHook(function() loading = false end)

@@ -15,7 +15,7 @@ s.arm(5100); assert(s.hides == 0); s.tick(8100); assert(s.hides == 6)
 s.keys[8](); s.visible()
 s = fixture({quiet=true})
 assert(s.keys[7] == nil and s.keys[8] and #s.ticks == 1 and next(s.hooks))
-assert(s.has("[MagicalScabbards 0.1.1-test.3] INFO START"))
+assert(s.has("[MagicalScabbards 0.1.1-test.4] INFO START"))
 s.arm(0); s.tick(3000)
 assert(s.hides == 6 and s.has("HIDDEN targets=6"))
 assert(not s.has("WINDOW_START") and not s.has("CENSUS_BEGIN") and not s.has("ADMISSION"))
@@ -91,7 +91,7 @@ package.loaded.vfx.preview = originalPreview
 local sparkPath = "/Game/MainContent/Assets/fx/bp/skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 local sparks, watchdogs = {}, {}
 local wantedScale, wantedRate, wantedCutoff = 0.60, 0.5, 1500
-local shared
+local allowAssetLoad, loadCalls = true, 0
 s = fixture({quiet=true, setup=function(state)
     package.loaded.vfx = nil
     local function object(name)
@@ -112,10 +112,13 @@ s = fixture({quiet=true, setup=function(state)
     end
     local asset = object("ParticleSystem " .. sparkPath)
     state.objects[sparkPath] = asset
-    ModRef = {GetSharedVariable=function(_, key)
-        assert(key == "NikichMods.MagicalScabbards.StaffSpark.v1")
-        return shared
-    end}
+    LoadAsset = function(path)
+        assert(path == sparkPath)
+        loadCalls = loadCalls + 1
+        if not allowAssetLoad then return nil, false, false end
+        state.objects[sparkPath] = asset
+        return asset, true, true
+    end
     FName = function(name) return {ToString=function() return name end} end
     EFindName = {FNAME_Find=0}
     local mesh = state.objects["pawn"].Mesh
@@ -151,29 +154,66 @@ s = fixture({quiet=true, setup=function(state)
 end})
 s.arm(0)
 assert(#sparks==1 and sparks[1].activated and s.hides==0)
-assert(s.has("scale=0.60 rate=0.5 cutoff_ms=1500 settings=default"))
+assert(s.has("scale=0.60 rate=0.5 cutoff_ms=1500"))
+assert(loadCalls == 0)
 s.tick(3000)
 assert(s.hides==6)
 watchdogs[1]()
 assert(sparks[1].dead and s.restores==0)
+-- Fixed settings survive successive windows, and stale watchdogs do not destroy new VFX.
 s.draw(); s.visible()
-shared = "45:3:1250"
-wantedScale, wantedRate, wantedCutoff = 0.45, 0.3, 1250
 s.arm(3100)
 assert(#sparks==2 and sparks[2].activated)
-assert(s.has("scale=0.45 rate=0.3 cutoff_ms=1250 settings=browser"))
 watchdogs[1]()
 assert(not sparks[2].dead)
 s.tick(6100)
 watchdogs[2]()
 s.draw(); s.visible()
-shared = "99:3:1250"
-wantedScale, wantedRate, wantedCutoff = 0.60, 0.5, 1500
 s.arm(6200)
 assert(#sparks==3 and sparks[3].activated)
 s.keys[8](); s.visible()
 assert(sparks[3].dead and not s.has("CLEANUP_PENDING"))
-ModRef = nil
+
+-- Exact mixed-family fixtures; no Staff-only gate may remain in VFX.
+s.addFamilies()
+s.bracer.owner, s.bracer.RootComponent.parent = s.pawn, s.pawn.Mesh
+s.keys[8]() -- restart
+local t = 9500
+for _, pair in ipairs({{0,1},{1,2},{2,3},{3,4},{4,5},{5,0},{5,7},{7,5},{1,7},{3,7}}) do
+    s.first, s.second = pair[1], pair[2]
+    local beforeBurst, beforeHide = #sparks, s.hides
+    s.arm(t)
+    assert(#sparks == beforeBurst+1, ("VFX missing on %d/%d"):format(pair[1],pair[2]))
+    assert(sparks[#sparks].activated and loadCalls==0)
+    s.tick(t+3000)
+    assert(s.hides>beforeHide, ("hide missing on %d/%d"):format(pair[1],pair[2]))
+    watchdogs[#watchdogs]()
+    s.draw(); s.visible()
+    t = t + 3200
+end
+
+-- Bounded exact-load fallback for nonresident template and cosmetic-only failure.
+s.objects[sparkPath] = nil
+s.first, s.second = 0, 2
+local beforeBurst = #sparks
+s.arm(t)
+assert(#sparks==beforeBurst+1 and loadCalls==1 and s.has("ASSET_LOADED"))
+s.tick(t+3000)
+watchdogs[#watchdogs]()
+s.draw(); s.visible()
+t = t + 3200
+s.loadPre(); s.loadPost()
+s.objects[sparkPath] = nil
+allowAssetLoad = false
+beforeBurst = #sparks
+local beforeHide = s.hides
+s.arm(t)
+assert(#sparks==beforeBurst and loadCalls==2 and s.has("MISS"))
+s.tick(t+3000)
+assert(s.hides>beforeHide)
+s.draw(); s.visible()
+s.keys[8]()
+assert(not s.has("CLEANUP_PENDING"))
 
 s = fixture({quiet=true, setup=function()
     package.loaded.vfx = nil
