@@ -1,5 +1,8 @@
 -- SPDX-License-Identifier: MPL-2.0
 local emit = print
+local source = assert(io.open("Scripts/main.lua", "r"))
+local version = assert(source:read("a"):match('local VERSION = "([^"]+)"'))
+source:close()
 local s = fixture({quiet=true, setup=function(state)
     local find = FindAllOf
     state.noHud = true
@@ -15,7 +18,7 @@ s.arm(5100); assert(s.hides == 0); s.tick(8100); assert(s.hides == 6)
 s.keys[8](); s.visible()
 s = fixture({quiet=true})
 assert(s.keys[7] == nil and s.keys[8] and #s.ticks == 1 and next(s.hooks))
-assert(s.has("[MagicalScabbards 0.1.1-test.5] INFO START"))
+assert(s.has(("[MagicalScabbards %s] INFO START"):format(version)))
 s.arm(0); s.tick(3000)
 assert(s.hides == 6 and s.has("HIDDEN targets=6"))
 assert(not s.has("WINDOW_START") and not s.has("CENSUS_BEGIN") and not s.has("ADMISSION"))

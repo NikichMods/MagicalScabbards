@@ -52,6 +52,16 @@ def build():
         match = re.search(rb"(?m)^Accepted test source: `([0-9a-f]{40})`$", record)
         assert match, "Stable release requires an accepted immutable test source"
         accepted_test_source = match.group(1).decode()
+        for name in FILES:
+            if not name.startswith("Scripts/"):
+                continue
+            accepted = git("show", f"{accepted_test_source}:{name}")
+            if name == "Scripts/main.lua":
+                test_version = re.compile(rb'(?m)^local VERSION = "' + re.escape(version.encode())
+                                          + rb'-test\.\d+"$')
+                accepted, matches = test_version.subn(f'local VERSION = "{version}"'.encode(), accepted)
+                assert matches == 1, "Accepted source must be a numbered candidate for this release"
+            assert files[name] == accepted, f"Stable behavior differs from accepted source: {name}"
     else:
         assert f"# MagicalScabbards {version}".encode() in record
         assert b"NOT ACCEPTED FOR RELEASE" in record
