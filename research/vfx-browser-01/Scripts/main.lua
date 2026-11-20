@@ -8,8 +8,8 @@ local HUD = "/Game/MainContent/Template/UMG/HUD/HUDMainUMG_BP.HUDMainUMG_BP_C"
 local HILDA = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_BP.hilda_BP_C"
 local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
-local mods = {ModifierKey.CONTROL, ModifierKey.ALT}
-local keys = {{Key.F5,"CLOSE"},{Key.F6,"PREV"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
+-- One unmodified key: each F7 press advances and immediately previews the next item.
+local NEXT_KEY = Key.F7
 local entries, selected = nil, 0
 local ui, labelRef, particle = nil, nil, nil
 local uiFault, particleFault, busy, disabled = false, false, false, false
@@ -178,7 +178,7 @@ local function close()
     local u=clearUI()
     if p and u then
         entries,selected=nil,0
-        log("CLOSED","press Ctrl+Alt+F7 to open with a fresh loaded-assets snapshot")
+        log("CLOSED","press F7 to open with a fresh loaded-assets snapshot")
     end
 end
 local function loadedPaths()
@@ -315,14 +315,9 @@ local function preview(step)
     end
     busy=false
 end
-local function execute(action)
+local function nextCandidate()
     if disabled then return end
-    local ok,err=pcall(ExecuteInGameThread,function()
-        if action=="CLOSE" then close()
-        elseif action=="NEXT" then preview(1)
-        elseif action=="PREV" then preview(-1)
-        else preview(0) end
-    end,EGameThreadMethod.EngineTick)
+    local ok,err=pcall(ExecuteInGameThread,function() preview(1) end,EGameThreadMethod.EngineTick)
     if not ok then log("DISPATCH_FAILED",tostring(err):sub(1,200));disabled=true end
 end
 local ok,err=pcall(function()
@@ -333,17 +328,15 @@ local ok,err=pcall(function()
         and type(FindAllOf)=="function" and type(StaticConstructObject)=="function"
         and type(RegisterLoadMapPreHook)=="function","required UE4SS API missing")
     assert(FName and EFindName and FText and EObjectFlags and EObjectFlags.RF_Transient,"UMG/FName unavailable")
-    for _,pair in ipairs(keys) do
-        assert(pair[1] and not IsKeyBindRegistered(pair[1],mods),"research key occupied: "..pair[2])
-    end
+    assert(NEXT_KEY and not IsKeyBindRegistered(NEXT_KEY),"unmodified F7 occupied")
     RegisterLoadMapPreHook(function()
         local checked,problem=pcall(close)
         if not checked then log("MAP_CLEANUP_FAULT",tostring(problem):sub(1,220)) end
     end)
-    for _,pair in ipairs(keys) do RegisterKeyBind(pair[1],mods,function() execute(pair[2]) end) end
+    RegisterKeyBind(NEXT_KEY,nextCandidate)
 end)
 if ok then
-    log("ARMED","Ctrl+Alt+F7 next / F6 previous / F9 replay / F5 close; game-thread only")
+    log("ARMED","F7 next + play; game-thread only; map change resets catalog")
 else
     disabled=true
     log("UNAVAILABLE",tostring(err):sub(1,300))
