@@ -16,7 +16,7 @@ for file in (BASE / "main.lua", BASE / "catalog.lua"):
         raise AssertionError(f"Lua 5.4 compile failure for {file.name}: {result!r}")
     assert callable(result), f"no callable Lua chunk: {file.name}"
 
-# Navigation has three required keys and scale adds two optional keys.
+# Navigation has three required keys, scale two optional keys and Staff-time one optional key.
 main_text = (BASE / "main.lua").read_text(encoding="utf-8")
 assert 'local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
 assert 'action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0' in main_text
@@ -25,6 +25,12 @@ assert "RegisterKeyBind(pair[1]" in main_text
 assert "IsKeyBindRegistered(pair[1])" in main_text
 assert "preview(step,scaleDelta)" in main_text
 assert "ModifierKey." not in main_text
+assert 'local TIME_RATES = {0.2,0.3,0.5}' in main_text
+assert 'local timeRateIndex = 2' in main_text
+assert 'c.CustomTimeDilation=rate' in main_text
+assert 'math.abs(c.CustomTimeDilation-rate)' in main_text
+assert 'cutoffMs=isStaff and 1000 or 1600' in main_text
+assert 'RegisterKeyBind(Key.F4' in main_text
 # A zero step in preview must preserve the currently selected index for replay.
 assert "elseif step~=0 then" in main_text
 assert "selected=((selected-1+step) % #entries)+1" in main_text
@@ -69,7 +75,7 @@ for bad in (0, 21, -1):
 lua.globals().browserCatalog = catalog
 lua.execute(r"""
 package.loaded.catalog=browserCatalog
-Key={F2=2,F3=3,F6=6,F7=7,F9=9}
+Key={F2=2,F3=3,F4=4,F6=6,F7=7,F9=9}
 EngineTickAvailable=true
 EGameThreadMethod={EngineTick=1}
 EObjectFlags={RF_Transient=1}
@@ -128,24 +134,30 @@ for i=1,2 do
     emitter.LODLevels=array({lod})
     db[path].Emitters=array({emitter})
 end
-keys, played, logs={}, {}, {}
+keys, played, logs, delays={}, {}, {}, {}
 api("GameplayStatics","SpawnEmitterAttached",function(asset,mesh,socket,_,_,scale)
     assert(not db["/World.Preview"] or not db["/World.Preview"].alive)
     assert(scale.X==scale.Y and scale.Y==scale.Z)
     local c=object("PSC /World.Preview",object("Class /Script/Engine.ParticleSystemComponent"))
     c.Template=asset
+    c.CustomTimeDilation=1.0
     function c:GetAttachParent() return mesh end
     function c:GetAttachSocketName() return socket end
     function c:K2_DestroyComponent(component)
         assert(component==self)
         self.alive=false
     end
-    function c:Activate() played[#played+1]={asset=asset,scale=scale.X} end
+    function c:Activate()
+        played[#played+1]={asset=asset,scale=scale.X,rate=self.CustomTimeDilation}
+    end
     db["/World.Preview"]=c
     return c
 end)
 function ExecuteInGameThread(callback) callback() end
-function ExecuteInGameThreadWithDelay() return 1 end
+function ExecuteInGameThreadWithDelay(ms)
+    delays[#delays+1]=ms
+    return 1
+end
 function IsValidDelayedActionHandle() return true end
 function RegisterLoadMapPreHook() end
 function IsKeyBindRegistered() return false end
@@ -163,11 +175,17 @@ for i=1,10 do keys[2]() end
 assert(last().scale==0.10)
 keys[7](); assert(last().asset~=first and last().scale==0.10)
 local second=last().asset
+assert(last().rate==0.3 and delays[#delays]==1000)
+keys[4](); assert(last().asset==second and last().rate==0.5 and delays[#delays]==1000)
+keys[4](); assert(last().asset==second and last().rate==0.2 and delays[#delays]==1000)
+keys[4](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==1000)
 for i=1,12 do keys[3]() end
 assert(last().asset==second and last().scale==0.60)
 keys[9](); assert(last().asset==second and last().scale==0.60)
 keys[6](); assert(last().asset==first and last().scale==0.60)
 assert(table.concat(logs):find("scale=0.60",1,true))
+assert(table.concat(logs):find("TIME_SET",1,true))
+assert(table.concat(logs):find("rate=0.3 cutoff_ms=1000",1,true))
 local text=table.concat(logs)
 assert(text:find("field=StartVelocity",1,true) and text:find("parameter=TestVelocity",1,true))
 local _,inspections=text:gsub("STAFF_INSPECT_DONE","")
@@ -176,7 +194,7 @@ assert(inspections==1)
 lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==3 end")
 lua.execute(main_text)
 lua.execute("""
-assert(keys[6] and keys[7] and keys[9] and not keys[2] and not keys[3])
+assert(keys[6] and keys[7] and keys[9] and keys[4] and not keys[2] and not keys[3])
 assert(table.concat(logs):find("SCALE_UNAVAILABLE",1,true))
 """)
-print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, bounded scale and scale key collision")
+print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, bounded scale, staff time-rates/cutoff and optional key collisions")

@@ -13,6 +13,9 @@ local STAFF_SPARK = ROOT.."skill/hilda_ult/_stf01/private/stf01_spark.stf01_spar
 local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
 local entries, selected = nil, 0
 local scalePercent = 40
+-- Staff cast spark only: change preview animation rate, never a stock asset.
+local TIME_RATES = {0.2,0.3,0.5}
+local timeRateIndex = 2 -- initial 0.3
 local ui, labelRef, particle = nil, nil, nil
 local uiFault, particleFault, busy, disabled = false, false, false, false
 local alive, spawn = nil, nil
@@ -334,7 +337,11 @@ local function preview(step, scaleDelta)
         local size=scalePercent/100
         local e=entries[selected]
         assert(e,"no candidate")
-        local title=("%02d/%02d  %s  scale=%.2f"):format(selected,#entries,e.label,size)
+        local isStaff=e.path==STAFF_SPARK
+        local rate=isStaff and TIME_RATES[timeRateIndex] or 1.0
+        local cutoffMs=isStaff and 1000 or 1600
+        local title=("%02d/%02d  %s  scale=%.2f%s"):format(selected,#entries,e.label,size,
+            isStaff and ("  time=%.1f  cutoff=1.0s"):format(rate) or "")
         message(title.." | checking...")
         local asset,info=assetFor(e)
         if not asset then
@@ -342,7 +349,7 @@ local function preview(step, scaleDelta)
             log("SKIPPED",("id=%02d path=%s reason=%s"):format(selected,e.path,tostring(info)))
             return
         end
-        if e.path==STAFF_SPARK and not inspectedStaffSpark then
+        if isStaff and not inspectedStaffSpark then
             inspectedStaffSpark=true
             local inspected,issue=pcall(inspectStaffSpark,asset)
             if not inspected then log("STAFF_INSPECT_FAILED",tostring(issue):sub(1,240)) end
@@ -357,14 +364,23 @@ local function preview(step, scaleDelta)
         particle=ref(c)
         assert(c.Template:GetAddress()==asset:GetAddress() and c:GetAttachParent():GetAddress()==context.mesh:GetAddress()
             and c:GetAttachSocketName():ToString()==socketName, "spawn attachment verification failed")
+        if isStaff then
+            -- PSC is ours and spawned with autoActivate=false; do not mutate Template or CDO.
+            assert(type(c.CustomTimeDilation)=="number","PSC CustomTimeDilation unavailable")
+            c.CustomTimeDilation=rate
+            assert(math.abs(c.CustomTimeDilation-rate)<0.0001,
+                "PSC CustomTimeDilation readback mismatch")
+            log("TIME_SET",("id=%02d rate=%.1f cutoff_ms=%d"):format(selected,rate,cutoffMs))
+        end
         local item=particle
-        local handle=ExecuteInGameThreadWithDelay(1600,function()
+        local handle=ExecuteInGameThreadWithDelay(cutoffMs,function()
             if particle==item then clearParticle("watchdog") end
         end)
         assert(math.type(handle)=="integer" and IsValidDelayedActionHandle(handle),"watchdog unavailable")
         c:Activate(false)
         message(title.." | PLAY  "..socketName)
-        log("PLAY",("id=%02d path=%s scale=%.2f %s"):format(selected,e.path,size,info))
+        log("PLAY",("id=%02d path=%s scale=%.2f rate=%.1f cutoff_ms=%d %s"):format(
+            selected,e.path,size,rate,cutoffMs,info))
     end)
     if not ok then
         log("FAILED",tostring(err):sub(1,300))
@@ -376,7 +392,16 @@ local function selectCandidate(action)
     if disabled then return end
     local step = action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0
     local scaleDelta = action=="SMALLER" and -5 or action=="LARGER" and 5 or 0
-    local ok,err=pcall(ExecuteInGameThread,function() preview(step,scaleDelta) end,EGameThreadMethod.EngineTick)
+    local ok,err=pcall(ExecuteInGameThread,function()
+        if action=="TIME" then
+            if not entries or not entries[selected] or entries[selected].path~=STAFF_SPARK then
+                log("TIME_SKIPPED","select Staff cast spark (id=02) first")
+                return
+            end
+            timeRateIndex=(timeRateIndex % #TIME_RATES)+1
+        end
+        preview(step,scaleDelta)
+    end,EGameThreadMethod.EngineTick)
     if not ok then log("DISPATCH_FAILED",tostring(err):sub(1,200));disabled=true end
 end
 local ok,err=pcall(function()
@@ -411,6 +436,14 @@ if ok then
     end)
     if scaleOk then log("SCALE_READY","F2 smaller / F3 larger")
     else log("SCALE_UNAVAILABLE",tostring(scaleErr):sub(1,220)) end
+    local timeReady=false
+    local timeOk,timeErr=pcall(function()
+        assert(Key.F4 and not IsKeyBindRegistered(Key.F4),"F4 unavailable")
+        RegisterKeyBind(Key.F4,function() if timeReady then selectCandidate("TIME") end end)
+        timeReady=true
+    end)
+    if timeOk then log("TIME_READY","F4 cycles 0.3 -> 0.5 -> 0.2 -> 0.3 on Staff cast spark only")
+    else log("TIME_UNAVAILABLE",tostring(timeErr):sub(1,220)) end
 else
     disabled=true
     log("UNAVAILABLE",tostring(err):sub(1,300))
