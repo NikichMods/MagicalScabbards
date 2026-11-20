@@ -113,6 +113,17 @@ for i=1,2 do
     required.EmitterLoops,required.EmitterDuration=1,1
     local lod=object("LOD")
     lod.bEnabled,lod.RequiredModule=true,required
+    local velocity=object("Velocity",object("Class /Script/Engine.ParticleModuleVelocity"))
+    velocity.bEnabled=true
+    local distribution=object("Speed",object("Class /Script/Engine.DistributionVectorParticleParameter"))
+    distribution.ParameterName=FName("TestVelocity")
+    velocity.StartVelocity={Distribution=distribution,MinValue=0,MaxValue=40}
+    function velocity:Reflection()
+        return {GetProperty=function(_,key)
+            if key=="StartVelocity" then return object("StructProperty /Script/Engine.ParticleModuleVelocity:StartVelocity") end
+        end}
+    end
+    lod.Modules=array({velocity})
     local emitter=object("Emitter")
     emitter.LODLevels=array({lod})
     db[path].Emitters=array({emitter})
@@ -157,6 +168,10 @@ assert(last().asset==second and last().scale==0.60)
 keys[9](); assert(last().asset==second and last().scale==0.60)
 keys[6](); assert(last().asset==first and last().scale==0.60)
 assert(table.concat(logs):find("scale=0.60",1,true))
+local text=table.concat(logs)
+assert(text:find("field=StartVelocity",1,true) and text:find("parameter=TestVelocity",1,true))
+local _,inspections=text:gsub("STAFF_INSPECT_DONE","")
+assert(inspections==1)
 """)
 lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==3 end")
 lua.execute(main_text)

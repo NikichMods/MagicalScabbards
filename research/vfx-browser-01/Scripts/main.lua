@@ -8,6 +8,7 @@ local HUD = "/Game/MainContent/Template/UMG/HUD/HUDMainUMG_BP.HUDMainUMG_BP_C"
 local HILDA = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_BP.hilda_BP_C"
 local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
+local STAFF_SPARK = ROOT.."skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 -- Independent unmodified keys; no Ctrl/Alt chords.
 local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
 local entries, selected = nil, 0
@@ -15,6 +16,7 @@ local scalePercent = 40
 local ui, labelRef, particle = nil, nil, nil
 local uiFault, particleFault, busy, disabled = false, false, false, false
 local alive, spawn = nil, nil
+local inspectedStaffSpark = false
 
 local function log(event, details)
     print(("[MSVfxBrowser01] %s %s\n"):format(event, details or ""))
@@ -257,6 +259,53 @@ local function assetFor(e)
     if not allowed then return nil,info end
     return o,info
 end
+local function inspectStaffSpark(asset)
+    local fields={"StartLocation","StartRadius","StartHeight","VelocityScale",
+        "StartVelocity","StartVelocityRadial","Velocity","VelOverLife","Acceleration",
+        "StartSize","SizeScale","LifeMultiplier","LifeTime","BrightnessOverLife","RadiusScale"}
+    local function reportModule(module, location)
+        if not valid(module) then return end
+        local class=full(module:GetClass())
+        log("STAFF_MODULE",location.." class="..class.." enabled="..tostring(module.bEnabled))
+        local reflection=module:Reflection()
+        for _,key in ipairs(fields) do
+            local prop=reflection:GetProperty(key)
+            local signature=prop and prop:GetFullName()
+            if type(signature)=="string" and signature:match("^StructProperty .+:"..key.."$") then
+                local raw=module[key]
+                local distribution=raw.Distribution
+                local kind=valid(distribution) and full(distribution:GetClass()) or "unexposed"
+                local parameter=""
+                if kind=="Class /Script/Engine.DistributionFloatParticleParameter"
+                    or kind=="Class /Script/Engine.DistributionVectorParticleParameter" then
+                    parameter=" parameter="..distribution.ParameterName:ToString()
+                end
+                log("STAFF_DISTRIBUTION",("%s field=%s class=%s min=%s max=%s%s"):format(
+                    location,key,kind,tostring(raw.MinValue),tostring(raw.MaxValue),parameter))
+            end
+        end
+    end
+    local function each(array, limit, visit)
+        local count=array:GetArrayNum()
+        assert(count<=limit,"staff diagnostic array too large")
+        for i=1,count do
+            assert(i<=array:GetArrayNum(),"staff diagnostic array changed")
+            visit(array[i],i)
+        end
+    end
+    log("STAFF_INSPECT","path="..STAFF_SPARK)
+    each(asset.Emitters,10,function(emitter,i)
+        each(emitter.LODLevels,6,function(lod,j)
+            if lod.bEnabled~=false then
+                local tag=("emitter=%d lod=%d"):format(i,j)
+                log("STAFF_LOD",tag.." local_space="..tostring(lod.RequiredModule.bUseLocalSpace)
+                    .." type="..tostring(full(lod.TypeDataModule)))
+                each(lod.Modules,32,function(module,k) reportModule(module,tag.." module="..k) end)
+            end
+        end)
+    end)
+    log("STAFF_INSPECT_DONE","read-only")
+end
 local function anchor(mesh)
     for _,socketName in ipairs({"scabbard_b","scabbard_a"}) do
         local socket=FName(socketName,EFindName.FNAME_Find)
@@ -292,6 +341,11 @@ local function preview(step, scaleDelta)
             message(title.." | SKIP: "..tostring(info):sub(1,65))
             log("SKIPPED",("id=%02d path=%s reason=%s"):format(selected,e.path,tostring(info)))
             return
+        end
+        if e.path==STAFF_SPARK and not inspectedStaffSpark then
+            inspectedStaffSpark=true
+            local inspected,issue=pcall(inspectStaffSpark,asset)
+            if not inspected then log("STAFF_INSPECT_FAILED",tostring(issue):sub(1,240)) end
         end
         alive=alive or static("KismetSystemLibrary","IsValid")
         spawn=spawn or static("GameplayStatics","SpawnEmitterAttached")
