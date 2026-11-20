@@ -113,9 +113,12 @@ local ok, failure = pcall(function()
     assert(EngineTickAvailable and EGameThreadMethod and EGameThreadMethod.EngineTick, "EngineTick unavailable")
     for _, api in ipairs({"ExecuteInGameThread", "ExecuteInGameThreadWithDelay", "IsValidDelayedActionHandle",
         "RegisterLoadMapPreHook", "RegisterLoadMapPostHook", "RegisterEndPlayPreHook",
-        "RegisterKeyBind", "IsKeyBindRegistered", "FName", "StaticFindObject", "FindAllOf"}) do
+        "RegisterKeyBind", "IsKeyBindRegistered", "StaticFindObject", "FindAllOf"}) do
         assert(type(_G[api]) == "function", api .. " unavailable")
     end
+    -- UE4SS exposes FName as callable userdata.
+    assert(EFindName and math.type(EFindName.FNAME_Find) == "integer", "FNAME_Find unavailable")
+    assert(FName("None", EFindName.FNAME_Find):ToString() == "None", "FName lookup failed")
     local mods = {ModifierKey.CONTROL, ModifierKey.ALT}
     assert(Key.F5 and not IsKeyBindRegistered(Key.F5, mods), "Ctrl+Alt+F5 unavailable")
     RegisterLoadMapPreHook(function() loading = true; cleanup("load-map") end)
