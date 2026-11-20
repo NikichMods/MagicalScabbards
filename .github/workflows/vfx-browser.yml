@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MPL-2.0
+name: Check research VFX browser
+on:
+  push:
+    branches: ['dev/vfx-01']
+    paths:
+      - 'research/vfx-browser-01/**'
+      - 'tests/test_vfx_browser.py'
+      - '.github/workflows/vfx-browser.yml'
+permissions:
+  contents: read
+jobs:
+  syntax-and-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install lupa==2.8
+      - run: python tests/test_vfx_browser.py
