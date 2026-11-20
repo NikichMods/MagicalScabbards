@@ -15,7 +15,7 @@ s.arm(5100); assert(s.hides == 0); s.tick(8100); assert(s.hides == 6)
 s.keys[8](); s.visible()
 s = fixture({quiet=true})
 assert(s.keys[7] == nil and s.keys[8] and #s.ticks == 1 and next(s.hooks))
-assert(s.has("[MagicalScabbards 0.1.1-test.4] INFO START"))
+assert(s.has("[MagicalScabbards 0.1.1-test.5] INFO START"))
 s.arm(0); s.tick(3000)
 assert(s.hides == 6 and s.has("HIDDEN targets=6"))
 assert(not s.has("WINDOW_START") and not s.has("CENSUS_BEGIN") and not s.has("ADMISSION"))
@@ -30,6 +30,35 @@ stale(); assert(s.hides == 12)
 s.loadPre(); s.visible(); s.tick(6200); assert(s.restores == 12)
 s.loadPost(); s.arm(6300); assert(s.hides == 12); s.tick(9300); assert(s.hides == 18)
 s.keys[8](); s.visible(); assert(not s.has("CLEANUP_PENDING"))
+
+-- A streaming stall neither releases an intact mask nor counts toward a new hide.
+s = fixture({quiet=true})
+s.arm(0); s.tick(3000)
+s.tick(3337); s.tick(3671)
+assert(s.hides==6 and s.restores==0 and s.scans==1)
+for _, target in ipairs(s.targets) do assert(not target.bVisible) end
+s.pendingSkill = "hilda_cudgel_atk1_idle"
+s.draw(); s.visible()
+assert(s.restores==6 and s.has("draw-pre skill=hilda_cudgel_atk1_idle"))
+s.keys[8]()
+
+s = fixture({quiet=true})
+s.arm(0); s.tick(3000)
+s.hand = 4
+s.tick(3337)
+assert(s.restores==6 and s.has("phase-DRAWN")); s.visible()
+s.keys[8]()
+
+s = fixture({quiet=true})
+for t=0,2800,100 do s.tick(t) end
+s.tick(3137)
+for t=3237,6037,100 do s.tick(t) end
+assert(s.hides==0)
+s.tick(6137)
+assert(s.hides==6)
+s.tick(6000)
+assert(s.restores==6 and s.has("clock-regressed")); s.visible()
+s.keys[8]()
 
 -- Only pure movement can preserve a mask and the existing stowed window.
 s = fixture({quiet=true})

@@ -19,7 +19,7 @@ def run(source, cwd):
 
 def adapted_source():
     # Reuse the complete accepted Bracer 03 suite without changing its frozen files.
-    # Only adapt activation to autostart/F8 and enable diagnostic assertions.
+    # Adapt entry points, diagnostics and the changed active-mask gap contract.
     source = LEGACY.read_text(encoding="utf-8")
     source = source.replace("local function fixture()", "local function fixture(options)\n    options = options or {}", 1)
     source = source.replace(
@@ -40,6 +40,10 @@ def adapted_source():
     assert(load(source, "@Scripts/main.lua"))()'''
     assert source.count(old) == 1
     source = source.replace(old, new)
+    old_gap = 'assert(s.restores == 6 and s.has("observation-gap ms=400")); s.visible()'
+    new_gap = 'assert(s.restores == 0 and s.scans == 1); s.keys[8](); s.visible()'
+    assert source.count(old_gap) == 1
+    source = source.replace(old_gap, new_gap)
     assert source.count('s.keys[7](); stale()') == 1
     return source.replace('s.keys[7](); stale()', 's.keys[8](); stale()')
 

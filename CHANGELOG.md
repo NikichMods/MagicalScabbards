@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1-test.5 — development candidate, not released
+
+- Preserve hidden scabbards across delayed observations when the current equipment is still stowed and the mask remains intact. New hides still require a continuous three-second observation window.
+
 ## 0.1.1-test.4 — development candidate, not released
 
 - Added a single short Staff cast spark to every confirmed stowed scabbard disappearance, regardless of equipped weapon family (new game acceptance pending).

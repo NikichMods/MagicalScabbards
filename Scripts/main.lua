@@ -7,7 +7,7 @@ local vfx = require("vfx")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
-local VERSION = "0.1.1-test.4"
+local VERSION = "0.1.1-test.5"
 local DEBUG_LOGGING = false
 
 local lastWarning
@@ -56,11 +56,11 @@ local function sample(ticket)
         local gap = lastSample and now and now - lastSample
         lastSample = now
         if controller.active() then
+            -- Revalidate the existing lease after a stall. Continuity is required to acquire it below.
             local intact, issue = controller.intact()
             local reason = not intact and issue
-                or (not now and "context-lost")
+                or ((not now or not (now >= 0 and now < math.huge)) and "context-lost")
                 or (gap and gap < 0 and "clock-regressed")
-                or (gap and gap > 250 and ("observation-gap ms=%.1f"):format(gap))
                 or (snapshot.phase ~= "STOWED" and ("phase-" .. snapshot.phase))
                 or (not equipment.supported(snapshot) and "kit-unsupported")
                 or (snapshot.identity ~= maskedIdentity and "snapshot-identity-changed")
