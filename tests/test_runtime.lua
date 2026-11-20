@@ -15,7 +15,7 @@ s.arm(5100); assert(s.hides == 0); s.tick(8100); assert(s.hides == 6)
 s.keys[8](); s.visible()
 s = fixture({quiet=true})
 assert(s.keys[7] == nil and s.keys[8] and #s.ticks == 1 and next(s.hooks))
-assert(s.has("[MagicalScabbards 0.1.1-test.2] INFO START"))
+assert(s.has("[MagicalScabbards 0.1.1-test.3] INFO START"))
 s.arm(0); s.tick(3000)
 assert(s.hides == 6 and s.has("HIDDEN targets=6"))
 assert(not s.has("WINDOW_START") and not s.has("CENSUS_BEGIN") and not s.has("ADMISSION"))
@@ -30,6 +30,38 @@ stale(); assert(s.hides == 12)
 s.loadPre(); s.visible(); s.tick(6200); assert(s.restores == 12)
 s.loadPost(); s.arm(6300); assert(s.hides == 12); s.tick(9300); assert(s.hides == 18)
 s.keys[8](); s.visible(); assert(not s.has("CLEANUP_PENDING"))
+
+-- Only pure movement can preserve a mask and the existing stowed window.
+s = fixture({quiet=true})
+for t=0,2800,100 do s.tick(t) end
+s.pendingSkill = "hilda_dodge"
+s.draw()
+s.doing, s.pendingSkill = s.pendingSkill, nil
+s.tick(2900); s.tick(3000)
+assert(s.hides==6 and s.restores==0)
+for i,skill in ipairs({"hilda_dodge_early", "hilda_step", "hilda_step_early"}) do
+    s.pendingSkill = skill
+    s.draw()
+    s.doing, s.pendingSkill = skill, nil
+    s.tick(3000+100*i)
+    assert(s.hides==6 and s.restores==0 and s.has("preserving mask for skill="..skill))
+end
+s.pendingSkill = "hilda_dual_dodgeatk"
+s.draw()
+s.visible()
+assert(s.restores==6 and s.has("draw-pre skill=hilda_dual_dodgeatk"))
+s.doing, s.pendingSkill = nil, nil
+s.arm(3400); s.tick(6400)
+s.pendingSkill = "hilda_dual_shiftatk1"
+s.draw()
+s.visible()
+assert(s.restores==12 and s.has("draw-pre skill=hilda_dual_shiftatk1"))
+s.doing, s.pendingSkill = nil, nil
+s.arm(6500); s.tick(9500)
+s.doing, s.hand = "hilda_step", 4
+s.tick(9600)
+assert(s.restores==18 and s.has("phase-DRAWN"))
+s.keys[8]()
 
 -- The preview belongs to the same uninterrupted stowed window as hide.
 local previewTimes = {}
@@ -58,6 +90,8 @@ package.loaded.vfx.preview = originalPreview
 -- A resident Staff cast spark uses only the new owned component and leaves mask timing intact.
 local sparkPath = "/Game/MainContent/Assets/fx/bp/skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 local sparks, watchdogs = {}, {}
+local wantedScale, wantedRate, wantedCutoff = 0.60, 0.5, 1500
+local shared
 s = fixture({quiet=true, setup=function(state)
     package.loaded.vfx = nil
     local function object(name)
@@ -78,6 +112,10 @@ s = fixture({quiet=true, setup=function(state)
     end
     local asset = object("ParticleSystem " .. sparkPath)
     state.objects[sparkPath] = asset
+    ModRef = {GetSharedVariable=function(_, key)
+        assert(key == "NikichMods.MagicalScabbards.StaffSpark.v1")
+        return shared
+    end}
     FName = function(name) return {ToString=function() return name end} end
     EFindName = {FNAME_Find=0}
     local mesh = state.objects["pawn"].Mesh
@@ -86,7 +124,7 @@ s = fixture({quiet=true, setup=function(state)
     api("GameplayStatics", "SpawnEmitterAttached", function(template, parent, socket, _, _, scale,
             attachment, autoDestroy, pooling, autoActivate)
         assert(template==asset and parent==mesh and socket:ToString()=="scabbard_b")
-        assert(scale.X==0.50 and scale.Y==0.50 and scale.Z==0.50 and attachment==0)
+        assert(scale.X==wantedScale and scale.Y==wantedScale and scale.Z==wantedScale and attachment==0)
         assert(autoDestroy and pooling==0 and autoActivate==false)
         local c = object("Component pawn.spark")
         local class = object("Class /Script/Engine.ParticleSystemComponent")
@@ -96,7 +134,7 @@ s = fixture({quiet=true, setup=function(state)
         c.GetAttachSocketName = function() return socket end
         c.K2_DestroyComponent = function(self, owner) assert(self==owner); self.dead=true end
         c.Activate = function(self, reset)
-            assert(self.CustomTimeDilation==0.3 and reset==false and #watchdogs==#sparks)
+            assert(self.CustomTimeDilation==wantedRate and reset==false and #watchdogs==#sparks)
             self.activated = true
         end
         state.objects["pawn.spark"] = c
@@ -104,7 +142,7 @@ s = fixture({quiet=true, setup=function(state)
         return c
     end)
     ExecuteInGameThreadWithDelay = function(ms, callback)
-        assert(ms==1500)
+        assert(ms==wantedCutoff)
         watchdogs[#watchdogs+1] = callback
         return 100+#watchdogs
     end
@@ -113,17 +151,29 @@ s = fixture({quiet=true, setup=function(state)
 end})
 s.arm(0)
 assert(#sparks==1 and sparks[1].activated and s.hides==0)
+assert(s.has("scale=0.60 rate=0.5 cutoff_ms=1500 settings=default"))
 s.tick(3000)
 assert(s.hides==6)
 watchdogs[1]()
 assert(sparks[1].dead and s.restores==0)
 s.draw(); s.visible()
+shared = "45:3:1250"
+wantedScale, wantedRate, wantedCutoff = 0.45, 0.3, 1250
 s.arm(3100)
 assert(#sparks==2 and sparks[2].activated)
+assert(s.has("scale=0.45 rate=0.3 cutoff_ms=1250 settings=browser"))
 watchdogs[1]()
 assert(not sparks[2].dead)
+s.tick(6100)
+watchdogs[2]()
+s.draw(); s.visible()
+shared = "99:3:1250"
+wantedScale, wantedRate, wantedCutoff = 0.60, 0.5, 1500
+s.arm(6200)
+assert(#sparks==3 and sparks[3].activated)
 s.keys[8](); s.visible()
-assert(sparks[2].dead and not s.has("CLEANUP_PENDING"))
+assert(sparks[3].dead and not s.has("CLEANUP_PENDING"))
+ModRef = nil
 
 s = fixture({quiet=true, setup=function()
     package.loaded.vfx = nil

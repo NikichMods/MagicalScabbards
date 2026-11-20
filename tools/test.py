@@ -22,6 +22,12 @@ def adapted_source():
     # Only adapt activation to autostart/F8 and enable diagnostic assertions.
     source = LEGACY.read_text(encoding="utf-8")
     source = source.replace("local function fixture()", "local function fixture(options)\n    options = options or {}", 1)
+    source = source.replace(
+        "    anim.GetDoingSkill = function() return none end\n    anim.GetToDoSkill = anim.GetDoingSkill",
+        """    anim.GetDoingSkill = function() return {ToString=function() return s.doing or "None" end} end
+    anim.GetToDoSkill = function() return {ToString=function() return s.pendingSkill or "None" end} end""",
+        1,
+    )
     old = '    dofile("Scripts/main.lua")\n    s.keys[7]()'
     new = '''    if options.setup then options.setup(s) end
     local file = assert(io.open("Scripts/main.lua", "r"))

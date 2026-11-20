@@ -24,6 +24,15 @@ local function visible(o) return valid(o) and o.bVisible == true and o.bHiddenIn
 local function enum(n) return math.type(n) == "integer" and (n >= 0 and n <= 5 or n == 7) end
 local function state(phase) return {phase=phase} end
 
+-- Exact stock movement rows. Dodge attacks and active weapon skills stay on the draw path.
+local dodgeMovement = {
+    hilda_dodge=true, hilda_dodge_early=true,
+    hilda_step=true, hilda_step_early=true,
+}
+local function idleOrDodge(skill)
+    return skill == "None" or dodgeMovement[skill]
+end
+
 local hudPath, animId
 local hudRetry = 0
 
@@ -134,7 +143,7 @@ local function readEquipmentState()
         end
     end
     local phase = hand ~= 7 and "DRAWN" or "UNKNOWN"
-    if hand == 7 and occupied and complete and doing == "None" and nextSkill == "None" then
+    if hand == 7 and occupied and complete and idleOrDodge(doing) and idleOrDodge(nextSkill) then
         phase = "STOWED"
     end
     local note
@@ -308,4 +317,5 @@ end
 
 return {read=readEquipmentState, targets=targets, admission=resolveAdmission, owned=resolveOwned,
     retired=retired, ancestor=affectedByAncestor, id=id, name=name, supported=supported,
+    isDodge=function(skill) return dodgeMovement[skill] == true end,
     anim=function() return animId end, reset=function() hudPath, animId, hudRetry = nil, nil, 0 end}

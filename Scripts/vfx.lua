@@ -2,7 +2,8 @@
 local equipment = require("equipment")
 local ASSET = "/Game/MainContent/Assets/fx/bp/skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
-local SCALE, RATE, CUTOFF_MS = 0.50, 0.3, 1500
+local DEFAULT_SCALE, DEFAULT_RATE, DEFAULT_CUTOFF_MS = 0.60, 0.5, 1500
+local SETTINGS_KEY = "NikichMods.MagicalScabbards.StaffSpark.v1"
 local owned, sessionFault, reportedMiss
 local alive, spawn
 
@@ -13,6 +14,21 @@ end
 local function same(a, b)
     local id = equipment.id(a)
     return id ~= "-" and id == equipment.id(b)
+end
+
+local function settings()
+    if ModRef then
+        local ok, value = pcall(function() return ModRef:GetSharedVariable(SETTINGS_KEY) end)
+        if ok and type(value) == "string" and #value <= 9 then
+            local scale, rate, cutoff = value:match("^(%d%d):([235]):(%d%d%d%d?)$")
+            scale, rate, cutoff = tonumber(scale), tonumber(rate), tonumber(cutoff)
+            if scale and scale >= 10 and scale <= 60 and scale % 5 == 0
+                and cutoff >= 250 and cutoff <= 3000 and cutoff % 250 == 0 then
+                return scale / 100, rate / 10, cutoff, "browser"
+            end
+        end
+    end
+    return DEFAULT_SCALE, DEFAULT_RATE, DEFAULT_CUTOFF_MS, "default"
 end
 
 local function static(class, method)
@@ -55,25 +71,26 @@ local function play(snapshot, elapsed)
     assert(alive(snapshot.pawn) and alive(snapshot.mesh) and alive(asset), "invalid attachment context")
     local socket = FName("scabbard_b", EFindName.FNAME_Find)
     assert(socket:ToString() == "scabbard_b" and snapshot.mesh:DoesSocketExist(socket), "socket unavailable")
+    local scale, rate, cutoff, source = settings()
     spawn = spawn or static("GameplayStatics", "SpawnEmitterAttached")
     local c = spawn(asset, snapshot.mesh, socket, {X=0,Y=0,Z=0}, {Pitch=0,Yaw=0,Roll=0},
-        {X=SCALE,Y=SCALE,Z=SCALE}, 0, true, 0, false)
+        {X=scale,Y=scale,Z=scale}, 0, true, 0, false)
     assert(alive(c) and equipment.name(c:GetClass()) == PSC, "spawn result unverified")
     local ref = {path=assert(equipment.name(c):match("^[^ ]+ (.+)$")), id=equipment.id(c),
         pawn=equipment.id(snapshot.pawn)}
     owned = ref
     assert(same(c.Template, asset) and same(c:GetAttachParent(), snapshot.mesh)
         and c:GetAttachSocketName():ToString() == "scabbard_b", "spawn attachment mismatch")
-    local handle = ExecuteInGameThreadWithDelay(CUTOFF_MS, function()
+    local handle = ExecuteInGameThreadWithDelay(cutoff, function()
         if owned == ref then cleanup("watchdog") end
     end)
     assert(math.type(handle) == "integer" and IsValidDelayedActionHandle(handle), "watchdog unavailable")
     assert(type(c.CustomTimeDilation) == "number", "PSC CustomTimeDilation unavailable")
-    c.CustomTimeDilation = RATE
-    assert(math.abs(c.CustomTimeDilation - RATE) < 0.0001, "PSC CustomTimeDilation readback failed")
+    c.CustomTimeDilation = rate
+    assert(math.abs(c.CustomTimeDilation - rate) < 0.0001, "PSC CustomTimeDilation readback failed")
     c:Activate(false)
-    log("ACTIVATED", ("stowed_ms=%.1f asset=stf01_spark socket=scabbard_b scale=%.2f rate=%.1f cutoff_ms=%d")
-        :format(elapsed, SCALE, RATE, CUTOFF_MS))
+    log("ACTIVATED", ("stowed_ms=%.1f asset=stf01_spark socket=scabbard_b scale=%.2f rate=%.1f cutoff_ms=%d settings=%s")
+        :format(elapsed, scale, rate, cutoff, source))
 end
 
 return {

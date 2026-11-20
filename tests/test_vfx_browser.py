@@ -120,6 +120,16 @@ for i=1,2 do
     db[path].Emitters=array({emitter})
 end
 keys, played, logs, delays={}, {}, {}, {}
+sharedSettings, sharedCount=nil,0
+ModRef={}
+function ModRef:SetSharedVariable(key, value)
+    assert(key=="NikichMods.MagicalScabbards.StaffSpark.v1")
+    sharedSettings,sharedCount=value,sharedCount+1
+end
+function ModRef:GetSharedVariable(key)
+    assert(key=="NikichMods.MagicalScabbards.StaffSpark.v1")
+    return sharedSettings
+end
 api("GameplayStatics","SpawnEmitterAttached",function(asset,mesh,socket,_,_,scale)
     assert(not db["/World.Preview"] or not db["/World.Preview"].alive)
     assert(scale.X==scale.Y and scale.Y==scale.Z)
@@ -157,16 +167,19 @@ press("NUM_SIX"); press("F9"); assert(#played==0)
 press("F4")
 local second=last().asset
 assert(second:GetFullName()=="ParticleSystem "..catalogEntries[2].path)
-assert(last().scale==0.50 and last().rate==0.3 and delays[#delays]==1500)
+assert(last().scale==0.60 and last().rate==0.5 and delays[#delays]==1500)
+assert(sharedCount==0)
 press("NUM_ONE")
-assert(last().asset==second and last().rate==0.3 and delays[#delays]==1250)
+assert(last().asset==second and last().rate==0.5 and delays[#delays]==1250)
+assert(sharedSettings=="60:5:1250")
 press("NUM_THREE"); assert(delays[#delays]==1500)
+press("NUM_SEVEN"); assert(last().rate==0.3 and delays[#delays]==1500)
 press("NUM_SEVEN"); assert(last().rate==0.2 and delays[#delays]==1500)
 press("NUM_SEVEN"); assert(last().rate==0.2)
 press("NUM_NINE"); assert(last().rate==0.3)
 press("NUM_NINE"); assert(last().rate==0.5)
 press("NUM_NINE"); assert(last().rate==0.5)
-press("F2"); assert(last().scale==0.45)
+press("F2"); assert(last().scale==0.55 and sharedSettings=="55:5:1500")
 for i=1,12 do press("F3") end
 assert(last().asset==second and last().scale==0.60)
 press("F9"); assert(last().asset==second and last().scale==0.60)
@@ -179,11 +192,15 @@ press("NUM_TWO"); press("NUM_EIGHT")
 assert(#played==beforeBrightness and delays[#delays]==3000)
 press("NUM_FOUR")
 assert(last().asset:GetFullName()=="ParticleSystem "..catalogEntries[1].path)
-assert(delays[#delays]==1600 and last().rate==1.0)
+assert(delays[#delays]==1600 and last().rate==1.0 and last().scale==0.50)
 local beforeOther=#played
+local sharedBeforeOther=sharedCount
 press("NUM_ONE"); press("NUM_THREE"); press("NUM_SEVEN"); press("NUM_NINE")
 assert(#played==beforeOther)
+press("F2")
+assert(last().scale==0.45 and sharedCount==sharedBeforeOther)
 press("NUM_SIX"); assert(last().asset==second and delays[#delays]==3000)
+assert(last().scale==0.60 and sharedCount==sharedBeforeOther)
 press("F4")
 local beforeClosed=#played
 press("NUM_SIX"); press("F9"); assert(#played==beforeClosed)

@@ -7,7 +7,7 @@ local vfx = require("vfx")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
-local VERSION = "0.1.1-test.2"
+local VERSION = "0.1.1-test.3"
 local DEBUG_LOGGING = false
 
 local lastWarning
@@ -20,7 +20,8 @@ local function log(event, detail)
         lastWarning = warning
     elseif not DEBUG_LOGGING and not errors[event] and event ~= "START"
         and event ~= "CLEANED" and event ~= "WRITER" and event ~= "HIDDEN"
-        and event ~= "RELEASED" and event ~= "RETIRED" and event ~= "FOREIGN_CONTROLLED" then
+        and event ~= "RELEASED" and event ~= "RETIRED" and event ~= "FOREIGN_CONTROLLED"
+        and event ~= "DODGE" then
         return
     end
     local level = errors[event] and "ERROR" or
@@ -169,10 +170,21 @@ local function start()
         hook(path, function(...) watch(ticket, channel, "pre", ...) end,
             function(...) watch(ticket, channel, "post", ...) end)
     end
+    local reportedDodge = {}
     hook(DRAW, function(param)
         if session ~= ticket then return end
         local ok, err = pcall(function()
-            if equipment.id(param:get()) == equipment.anim() then release("draw-pre") end
+            local anim = param:get()
+            if equipment.id(anim) ~= equipment.anim() then return end
+            local read, skill = pcall(function() return anim:GetToDoSkill():ToString() end)
+            if read and equipment.isDodge(skill) then
+                if controller.active() and not reportedDodge[skill] then
+                    reportedDodge[skill] = true
+                    log("DODGE", "preserving mask for skill=" .. skill)
+                end
+                return
+            end
+            release("draw-pre" .. (read and type(skill) == "string" and " skill=" .. skill or ""))
         end)
         if not ok then
             controller.invalidate()

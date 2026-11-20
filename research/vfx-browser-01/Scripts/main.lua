@@ -9,12 +9,14 @@ local HILDA = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_
 local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
 local STAFF_SPARK = ROOT.."skill/hilda_ult/_stf01/private/stf01_spark.stf01_spark"
+local SETTINGS_KEY = "NikichMods.MagicalScabbards.StaffSpark.v1"
 -- Independent unmodified keys; no Ctrl/Alt chords.
 local entries, selected = nil, 0
 local scalePercent = 50
+local staffScalePercent = 60
 -- Staff cast spark only: change preview animation rate, never a stock asset.
 local TIME_RATES = {0.2,0.3,0.5}
-local timeRateIndex = 2 -- initial 0.3
+local timeRateIndex = 3 -- initial 0.5
 -- Real-time browser cleanup cutoff, independently selectable from particle dilation.
 -- Integer milliseconds avoid rounding drift at quarter-second steps.
 local CUTOFF_MIN_MS, CUTOFF_MAX_MS, CUTOFF_STEP_MS = 250, 3000, 250
@@ -27,6 +29,15 @@ local inspectedStaffSpark = false
 
 local function log(event, details)
     print(("[MSVfxBrowser01] %s %s\n"):format(event, details or ""))
+end
+local function shareSettings()
+    local value=("%d:%d:%d"):format(staffScalePercent,TIME_RATES[timeRateIndex]*10,cutoffMsStaff)
+    local ok,err=pcall(function()
+        ModRef:SetSharedVariable(SETTINGS_KEY,value)
+        assert(ModRef:GetSharedVariable(SETTINGS_KEY)==value,"shared settings readback mismatch")
+    end)
+    if ok then log("SETTINGS_SHARED",value)
+    else log("SETTINGS_UNAVAILABLE",tostring(err):sub(1,180)) end
 end
 local function valid(o) return o ~= nil and o:IsValid() end
 local function full(o) return valid(o) and o:GetFullName() or nil end
@@ -322,7 +333,7 @@ local function anchor(mesh)
     end
     error("no tested scabbard socket present")
 end
-local function preview(step, scaleDelta)
+local function preview(step, scaleDelta, staffTimingChanged)
     if disabled or particleFault or ui and not resolve(ui) then
         log("BLOCKED","disabled/cleanup fault; stop and restart game")
         return
@@ -339,11 +350,18 @@ local function preview(step, scaleDelta)
         elseif step~=0 then
             selected=((selected-1+step) % #entries)+1
         end
-        scalePercent=math.max(10,math.min(60,scalePercent+scaleDelta))
-        local size=scalePercent/100
         local e=entries[selected]
         assert(e,"no candidate")
         local isStaff=e.path==STAFF_SPARK
+        local size
+        if isStaff then
+            staffScalePercent=math.max(10,math.min(60,staffScalePercent+scaleDelta))
+            size=staffScalePercent/100
+            if scaleDelta~=0 or staffTimingChanged then shareSettings() end
+        else
+            scalePercent=math.max(10,math.min(60,scalePercent+scaleDelta))
+            size=scalePercent/100
+        end
         local rate=isStaff and TIME_RATES[timeRateIndex] or 1.0
         local cutoffMs=isStaff and cutoffMsStaff or 1600
         local title=("%02d/%02d  %s  scale=%.2f%s"):format(selected,#entries,e.label,size,
@@ -410,11 +428,13 @@ local function handleKey(action)
             if entries and entries[selected] then
                 local e=entries[selected]
                 message(("%02d/%02d  %s | brightness unavailable"):format(selected,#entries,e.label))
-                log("BRIGHTNESS_UNAVAILABLE","no verified instance brightness parameter path="..e.path)
+                log("BRIGHTNESS_UNAVAILABLE","separate light brightness has no verified instance parameter path="..e.path)
             end
             return
         end
-        if action=="SLOWER" or action=="FASTER" or action=="CUTOFF_SHORTER" or action=="CUTOFF_LONGER" then
+        local staffTiming = action=="SLOWER" or action=="FASTER"
+            or action=="CUTOFF_SHORTER" or action=="CUTOFF_LONGER"
+        if staffTiming then
             if not entries or not entries[selected] or entries[selected].path~=STAFF_SPARK then
                 log("STAFF_CONTROL_SKIPPED","select Staff cast spark (id=02) first action="..action)
                 return
@@ -429,7 +449,7 @@ local function handleKey(action)
                     cutoffMsStaff,CUTOFF_MIN_MS,CUTOFF_MAX_MS,CUTOFF_STEP_MS))
             end
         end
-        preview(step,scaleDelta)
+        preview(step,scaleDelta,staffTiming)
     end,EGameThreadMethod.EngineTick)
     if not ok then log("DISPATCH_FAILED",tostring(err):sub(1,200));disabled=true end
 end
