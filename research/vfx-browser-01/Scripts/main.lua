@@ -9,8 +9,9 @@ local HILDA = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_
 local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
 -- Independent unmodified keys; no Ctrl/Alt chords.
-local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
+local KEYS = {{Key.F4,"SMALLER"},{Key.F5,"LARGER"},{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
 local entries, selected = nil, 0
+local scalePercent = 40
 local ui, labelRef, particle = nil, nil, nil
 local uiFault, particleFault, busy, disabled = false, false, false, false
 local alive, spawn = nil, nil
@@ -263,7 +264,7 @@ local function anchor(mesh)
     end
     error("no tested scabbard socket present")
 end
-local function preview(step)
+local function preview(step, scaleDelta)
     if disabled or particleFault or ui and not resolve(ui) then
         log("BLOCKED","disabled/cleanup fault; stop and restart game")
         return
@@ -280,9 +281,11 @@ local function preview(step)
         elseif step~=0 then
             selected=((selected-1+step) % #entries)+1
         end
+        scalePercent=math.max(10,math.min(60,scalePercent+scaleDelta))
+        local size=scalePercent/100
         local e=entries[selected]
         assert(e,"no candidate")
-        local title=("%02d/%02d  %s"):format(selected,#entries,e.label)
+        local title=("%02d/%02d  %s  scale=%.2f"):format(selected,#entries,e.label,size)
         message(title.." | checking...")
         local asset,info=assetFor(e)
         if not asset then
@@ -294,7 +297,7 @@ local function preview(step)
         spawn=spawn or static("GameplayStatics","SpawnEmitterAttached")
         assert(alive(context.pawn) and alive(context.mesh) and alive(asset),"context invalidated")
         local socket,socketName=anchor(context.mesh)
-        local scale={X=0.40,Y=0.40,Z=0.40}
+        local scale={X=size,Y=size,Z=size}
         local c=spawn(asset,context.mesh,socket,{X=0,Y=0,Z=0},{Pitch=0,Yaw=0,Roll=0},scale,0,true,0,false)
         assert(alive(c) and full(c:GetClass())==PSC,"spawn returned unexpected component")
         particle=ref(c)
@@ -306,8 +309,8 @@ local function preview(step)
         end)
         assert(math.type(handle)=="integer" and IsValidDelayedActionHandle(handle),"watchdog unavailable")
         c:Activate(false)
-        message(title.." | PLAY  scale=.40  "..socketName)
-        log("PLAY",("id=%02d path=%s %s"):format(selected,e.path,info))
+        message(title.." | PLAY  "..socketName)
+        log("PLAY",("id=%02d path=%s scale=%.2f %s"):format(selected,e.path,size,info))
     end)
     if not ok then
         log("FAILED",tostring(err):sub(1,300))
@@ -318,7 +321,8 @@ end
 local function selectCandidate(action)
     if disabled then return end
     local step = action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0
-    local ok,err=pcall(ExecuteInGameThread,function() preview(step) end,EGameThreadMethod.EngineTick)
+    local scaleDelta = action=="SMALLER" and -5 or action=="LARGER" and 5 or 0
+    local ok,err=pcall(ExecuteInGameThread,function() preview(step,scaleDelta) end,EGameThreadMethod.EngineTick)
     if not ok then log("DISPATCH_FAILED",tostring(err):sub(1,200));disabled=true end
 end
 local ok,err=pcall(function()
@@ -342,7 +346,7 @@ local ok,err=pcall(function()
     end
 end)
 if ok then
-    log("ARMED","F6 previous / F7 next / F9 replay; no modifiers; game-thread only")
+    log("ARMED","F4 smaller / F5 larger / F6 previous / F7 next / F9 replay; no modifiers")
 else
     disabled=true
     log("UNAVAILABLE",tostring(err):sub(1,300))

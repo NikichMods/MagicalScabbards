@@ -16,15 +16,14 @@ for file in (BASE / "main.lua", BASE / "catalog.lua"):
         raise AssertionError(f"Lua 5.4 compile failure for {file.name}: {result!r}")
     assert callable(result), f"no callable Lua chunk: {file.name}"
 
-# Three individual keys: F7 next, F6 previous, F9 repeat; no Ctrl/Alt chords.
+# Five individual keys with no Ctrl/Alt chords.
 main_text = (BASE / "main.lua").read_text(encoding="utf-8")
-assert 'local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
+assert 'local KEYS = {{Key.F4,"SMALLER"},{Key.F5,"LARGER"},{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
 assert 'action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0' in main_text
 assert "selectCandidate(pair[2])" in main_text
 assert "RegisterKeyBind(pair[1]" in main_text
 assert "IsKeyBindRegistered(pair[1])" in main_text
-assert "preview(step)" in main_text
-assert "Key.F5" not in main_text
+assert "preview(step,scaleDelta)" in main_text
 assert "ModifierKey." not in main_text
 assert "RegisterKeyBind(" in main_text and main_text.count("RegisterKeyBind(") == 1
 # A zero step in preview must preserve the currently selected index for replay.
@@ -67,4 +66,97 @@ for bad in (0, 21, -1):
     except Exception:
         pass
 
-print("VFX_BROWSER_POLICY_PASS: lua syntax, seeds, bounded sorted dynamic scan, exact prefix and cap")
+# Drive the installed entry point through real key callbacks with a minimal host.
+lua.globals().browserCatalog = catalog
+lua.execute(r"""
+package.loaded.catalog=browserCatalog
+Key={F4=4,F5=5,F6=6,F7=7,F9=9}
+EngineTickAvailable=true
+EGameThreadMethod={EngineTick=1}
+EObjectFlags={RF_Transient=1}
+EFindName={FNAME_Find=0}
+function FName(s) return {ToString=function() return s end} end
+FText=FName
+local function object(name, class)
+    return {alive=true, IsValid=function(o) return o.alive end,
+        GetFullName=function() return name end, GetAddress=function(o) return tostring(o) end,
+        GetClass=function() return class end}
+end
+local function array(values)
+    function values:GetArrayNum() return #self end
+    return values
+end
+local db={}
+local hud=object("HUD /World.HUD",object("Class /Game/MainContent/Template/UMG/HUD/HUDMainUMG_BP.HUDMainUMG_BP_C"))
+local pawn=object("Hilda /World.Hilda",object("BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_BP.hilda_BP_C"))
+pawn.bHidden=false
+pawn.Mesh=object("Mesh /World.Hilda.CharacterMesh0", object("Class /Script/Engine.SkeletalMeshComponent"))
+function pawn.Mesh:GetOwner() return pawn end
+function pawn.Mesh:DoesSocketExist() return true end
+function hud:IsInViewport() return true end
+function hud:GetOwningPlayerPawn() return pawn end
+function FindAllOf(class) return class=="HUDMainUMG_BP_C" and {hud} or {} end
+function StaticFindObject(path) return db[path] end
+function StaticConstructObject() error("UI not exercised") end
+function LoadAsset() return nil,false,false end
+local function api(class, method, callback)
+    local path="/Script/Engine."..class..":"..method
+    db[path]=setmetatable(object("Function "..path),{__call=function(_,_,...) return callback(...) end})
+    db[path].GetFunctionFlags=function() return 0x400 end
+    db["/Script/Engine.Default__"..class]=object(class.." CDO")
+end
+api("KismetSystemLibrary","IsValid",function(o) return o.alive end)
+local entries=browserCatalog.build({})
+for i=1,2 do
+    local path=entries[i].path
+    db[path]=object("ParticleSystem "..path)
+    local required=object("Required module")
+    required.EmitterLoops,required.EmitterDuration=1,1
+    local lod=object("LOD")
+    lod.bEnabled,lod.RequiredModule=true,required
+    local emitter=object("Emitter")
+    emitter.LODLevels=array({lod})
+    db[path].Emitters=array({emitter})
+end
+keys, played, logs={}, {}, {}
+api("GameplayStatics","SpawnEmitterAttached",function(asset,mesh,socket,_,_,scale)
+    assert(not db["/World.Preview"] or not db["/World.Preview"].alive)
+    assert(scale.X==scale.Y and scale.Y==scale.Z)
+    local c=object("PSC /World.Preview",object("Class /Script/Engine.ParticleSystemComponent"))
+    c.Template=asset
+    function c:GetAttachParent() return mesh end
+    function c:GetAttachSocketName() return socket end
+    function c:K2_DestroyComponent(component)
+        assert(component==self)
+        self.alive=false
+    end
+    function c:Activate() played[#played+1]={asset=asset,scale=scale.X} end
+    db["/World.Preview"]=c
+    return c
+end)
+function ExecuteInGameThread(callback) callback() end
+function ExecuteInGameThreadWithDelay() return 1 end
+function IsValidDelayedActionHandle() return true end
+function RegisterLoadMapPreHook() end
+function IsKeyBindRegistered() return false end
+function RegisterKeyBind(key, callback) keys[key]=callback end
+function print(line) logs[#logs+1]=line end
+""")
+lua.execute(main_text)
+lua.execute("""
+local function last() return played[#played] end
+keys[7](); assert(last().scale==0.40)
+local first=last().asset
+keys[4](); assert(last().asset==first and last().scale==0.35)
+keys[5](); assert(last().asset==first and last().scale==0.40)
+for i=1,10 do keys[4]() end
+assert(last().scale==0.10)
+keys[7](); assert(last().asset~=first and last().scale==0.10)
+local second=last().asset
+for i=1,12 do keys[5]() end
+assert(last().asset==second and last().scale==0.60)
+keys[9](); assert(last().asset==second and last().scale==0.60)
+keys[6](); assert(last().asset==first and last().scale==0.60)
+assert(table.concat(logs):find("scale=0.60",1,true))
+""")
+print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, replay and bounded preview scale")
