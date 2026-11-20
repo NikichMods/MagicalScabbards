@@ -9,7 +9,7 @@ local HILDA = "BlueprintGeneratedClass /Game/MainContent/Act/Character_BP/hilda_
 local MESH = "Class /Script/Engine.SkeletalMeshComponent"
 local PSC = "Class /Script/Engine.ParticleSystemComponent"
 -- Independent unmodified keys; no Ctrl/Alt chords.
-local KEYS = {{Key.F4,"SMALLER"},{Key.F5,"LARGER"},{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
+local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}
 local entries, selected = nil, 0
 local scalePercent = 40
 local ui, labelRef, particle = nil, nil, nil
@@ -346,7 +346,17 @@ local ok,err=pcall(function()
     end
 end)
 if ok then
-    log("ARMED","F4 smaller / F5 larger / F6 previous / F7 next / F9 replay; no modifiers")
+    log("ARMED","F6 previous / F7 next / F9 replay; no modifiers")
+    local scaleReady=false
+    local scaleOk,scaleErr=pcall(function()
+        assert(Key.F2 and Key.F3 and not IsKeyBindRegistered(Key.F2) and not IsKeyBindRegistered(Key.F3),
+            "F2/F3 unavailable")
+        RegisterKeyBind(Key.F2,function() if scaleReady then selectCandidate("SMALLER") end end)
+        RegisterKeyBind(Key.F3,function() if scaleReady then selectCandidate("LARGER") end end)
+        scaleReady=true
+    end)
+    if scaleOk then log("SCALE_READY","F2 smaller / F3 larger")
+    else log("SCALE_UNAVAILABLE",tostring(scaleErr):sub(1,220)) end
 else
     disabled=true
     log("UNAVAILABLE",tostring(err):sub(1,300))

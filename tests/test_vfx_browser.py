@@ -16,16 +16,15 @@ for file in (BASE / "main.lua", BASE / "catalog.lua"):
         raise AssertionError(f"Lua 5.4 compile failure for {file.name}: {result!r}")
     assert callable(result), f"no callable Lua chunk: {file.name}"
 
-# Five individual keys with no Ctrl/Alt chords.
+# Navigation has three required keys and scale adds two optional keys.
 main_text = (BASE / "main.lua").read_text(encoding="utf-8")
-assert 'local KEYS = {{Key.F4,"SMALLER"},{Key.F5,"LARGER"},{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
+assert 'local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
 assert 'action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0' in main_text
 assert "selectCandidate(pair[2])" in main_text
 assert "RegisterKeyBind(pair[1]" in main_text
 assert "IsKeyBindRegistered(pair[1])" in main_text
 assert "preview(step,scaleDelta)" in main_text
 assert "ModifierKey." not in main_text
-assert "RegisterKeyBind(" in main_text and main_text.count("RegisterKeyBind(") == 1
 # A zero step in preview must preserve the currently selected index for replay.
 assert "elseif step~=0 then" in main_text
 assert "selected=((selected-1+step) % #entries)+1" in main_text
@@ -70,7 +69,7 @@ for bad in (0, 21, -1):
 lua.globals().browserCatalog = catalog
 lua.execute(r"""
 package.loaded.catalog=browserCatalog
-Key={F4=4,F5=5,F6=6,F7=7,F9=9}
+Key={F2=2,F3=3,F6=6,F7=7,F9=9}
 EngineTickAvailable=true
 EGameThreadMethod={EngineTick=1}
 EObjectFlags={RF_Transient=1}
@@ -147,16 +146,22 @@ lua.execute("""
 local function last() return played[#played] end
 keys[7](); assert(last().scale==0.40)
 local first=last().asset
-keys[4](); assert(last().asset==first and last().scale==0.35)
-keys[5](); assert(last().asset==first and last().scale==0.40)
-for i=1,10 do keys[4]() end
+keys[2](); assert(last().asset==first and last().scale==0.35)
+keys[3](); assert(last().asset==first and last().scale==0.40)
+for i=1,10 do keys[2]() end
 assert(last().scale==0.10)
 keys[7](); assert(last().asset~=first and last().scale==0.10)
 local second=last().asset
-for i=1,12 do keys[5]() end
+for i=1,12 do keys[3]() end
 assert(last().asset==second and last().scale==0.60)
 keys[9](); assert(last().asset==second and last().scale==0.60)
 keys[6](); assert(last().asset==first and last().scale==0.60)
 assert(table.concat(logs):find("scale=0.60",1,true))
 """)
-print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, replay and bounded preview scale")
+lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==3 end")
+lua.execute(main_text)
+lua.execute("""
+assert(keys[6] and keys[7] and keys[9] and not keys[2] and not keys[3])
+assert(table.concat(logs):find("SCALE_UNAVAILABLE",1,true))
+""")
+print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, bounded scale and scale key collision")
