@@ -16,15 +16,20 @@ for file in (BASE / "main.lua", BASE / "catalog.lua"):
         raise AssertionError(f"Lua 5.4 compile failure for {file.name}: {result!r}")
     assert callable(result), f"no callable Lua chunk: {file.name}"
 
-# One-key browser contract: F7 only, no Ctrl/Alt chords or extra preview keys.
+# Three individual keys: F7 next, F6 previous, F9 repeat; no Ctrl/Alt chords.
 main_text = (BASE / "main.lua").read_text(encoding="utf-8")
-assert "local NEXT_KEY = Key.F7" in main_text
-assert "RegisterKeyBind(NEXT_KEY,nextCandidate)" in main_text
-assert "IsKeyBindRegistered(NEXT_KEY)" in main_text
-assert "preview(1)" in main_text
-assert "Key.F5" not in main_text and "Key.F6" not in main_text and "Key.F9" not in main_text
+assert 'local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
+assert 'action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0' in main_text
+assert "selectCandidate(pair[2])" in main_text
+assert "RegisterKeyBind(pair[1]" in main_text
+assert "IsKeyBindRegistered(pair[1])" in main_text
+assert "preview(step)" in main_text
+assert "Key.F5" not in main_text
 assert "ModifierKey." not in main_text
 assert "RegisterKeyBind(" in main_text and main_text.count("RegisterKeyBind(") == 1
+# A zero step in preview must preserve the currently selected index for replay.
+assert "elseif step~=0 then" in main_text
+assert "selected=((selected-1+step) % #entries)+1" in main_text
 
 catalog = lua.execute((BASE / "catalog.lua").read_text(encoding="utf-8"))
 build = catalog["build"]
