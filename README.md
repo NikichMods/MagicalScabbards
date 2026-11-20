@@ -6,7 +6,7 @@ The scabbards return when Hilda starts drawing a weapon. They remain visible dur
 
 **Latest stable version:** 0.1.0 — [Download on GitHub Releases](https://github.com/NikichMods/MagicalScabbards/releases/latest).
 
-**Unreleased test candidate:** `0.1.1-test.5` (`MagicalScabbards-0.1.1-test.5.zip`). A brief game-thread stall preserves already-hidden scabbards when the next snapshot confirms the same stowed equipment and intact ownership. Blue Staff cast sparks from test.4 remain available with all supported weapon families and combinations. Full in-game acceptance is pending.
+**Unreleased test candidate:** `0.1.1-test.6` (`MagicalScabbards-0.1.1-test.6.zip`). The hide countdown has one owner in the code. Recheck the test.5 behavior across a brief stall and on weapon draw. Blue Staff cast sparks remain available with all supported weapon families and combinations.
 
 ## Features
 

@@ -12,14 +12,15 @@ local function new(maxGapMs)
             reset()
             return "PASS-THROUGH"
         end
-        if identity ~= state.identity or now < last or now - last > maxGapMs then
+        local started = identity ~= state.identity or now < last or now - last > maxGapMs
+        if started then
             identity, since, previewed = state.identity, now, nil
         end
         last = now
         local elapsed = now - since
         local preview = elapsed >= 2900 and not previewed
         if preview then previewed = true end
-        if elapsed < 3000 then return "PASS-THROUGH", preview, elapsed end
+        if elapsed < 3000 then return "PASS-THROUGH", preview, elapsed, started end
 
         local fresh = confirm()
         if fresh.phase ~= "STOWED" or fresh.identity ~= identity then

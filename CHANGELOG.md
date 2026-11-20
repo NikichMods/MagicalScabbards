@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1-test.6 — development candidate, not released
+
+- Centralize the stowed countdown and remove an unreachable check. Recheck the transition and draw behavior from test.5.
+
 ## 0.1.1-test.5 — development candidate, not released
 
 - Preserve hidden scabbards across delayed observations when the current equipment is still stowed and the mask remains intact. New hides still require a continuous three-second observation window.
