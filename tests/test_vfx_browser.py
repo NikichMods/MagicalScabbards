@@ -16,7 +16,7 @@ for file in (BASE / "main.lua", BASE / "catalog.lua"):
         raise AssertionError(f"Lua 5.4 compile failure for {file.name}: {result!r}")
     assert callable(result), f"no callable Lua chunk: {file.name}"
 
-# Navigation has three required keys, scale two optional keys and Staff-time one optional key.
+# Navigation has three required keys; scale, time-rate and cutoff are independent optional controls.
 main_text = (BASE / "main.lua").read_text(encoding="utf-8")
 assert 'local KEYS = {{Key.F6,"PREVIOUS"},{Key.F7,"NEXT"},{Key.F9,"REPLAY"}}' in main_text
 assert 'action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0' in main_text
@@ -29,7 +29,11 @@ assert 'local TIME_RATES = {0.2,0.3,0.5}' in main_text
 assert 'local timeRateIndex = 2' in main_text
 assert 'c.CustomTimeDilation=rate' in main_text
 assert 'math.abs(c.CustomTimeDilation-rate)' in main_text
-assert 'cutoffMs=isStaff and 1000 or 1600' in main_text
+assert 'cutoffMs=isStaff and cutoffMsStaff or 1600' in main_text
+assert 'local CUTOFF_MIN_MS, CUTOFF_MAX_MS, CUTOFF_STEP_MS = 250, 3000, 250' in main_text
+assert 'local cutoffMsStaff = 1000' in main_text
+assert 'RegisterKeyBind(Key.F10' in main_text and 'RegisterKeyBind(Key.F11' in main_text
+assert 'CUTOFF_UNAVAILABLE' in main_text and 'CUTOFF_SET' in main_text
 assert 'RegisterKeyBind(Key.F4' in main_text
 # A zero step in preview must preserve the currently selected index for replay.
 assert "elseif step~=0 then" in main_text
@@ -75,7 +79,7 @@ for bad in (0, 21, -1):
 lua.globals().browserCatalog = catalog
 lua.execute(r"""
 package.loaded.catalog=browserCatalog
-Key={F2=2,F3=3,F4=4,F6=6,F7=7,F9=9}
+Key={F2=2,F3=3,F4=4,F6=6,F7=7,F9=9,F10=10,F11=11}
 EngineTickAvailable=true
 EGameThreadMethod={EngineTick=1}
 EObjectFlags={RF_Transient=1}
@@ -176,16 +180,37 @@ assert(last().scale==0.10)
 keys[7](); assert(last().asset~=first and last().scale==0.10)
 local second=last().asset
 assert(last().rate==0.3 and delays[#delays]==1000)
+-- Cutoff is independently adjustable while keeping rate, scale, asset and selection.
+keys[10](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==750)
+keys[10](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==500)
+keys[11](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==750)
+keys[11](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==1000)
 keys[4](); assert(last().asset==second and last().rate==0.5 and delays[#delays]==1000)
 keys[4](); assert(last().asset==second and last().rate==0.2 and delays[#delays]==1000)
 keys[4](); assert(last().asset==second and last().rate==0.3 and delays[#delays]==1000)
 for i=1,12 do keys[3]() end
 assert(last().asset==second and last().scale==0.60)
 keys[9](); assert(last().asset==second and last().scale==0.60)
+-- Lower and upper bounds; every bounded change restarts the same component.
+for i=1,30 do keys[10]() end
+assert(last().asset==second and delays[#delays]==250)
+keys[9](); assert(last().asset==second and delays[#delays]==250)
+for i=1,30 do keys[11]() end
+assert(last().asset==second and delays[#delays]==3000)
+keys[9](); assert(last().asset==second and delays[#delays]==3000)
 keys[6](); assert(last().asset==first and last().scale==0.60)
+assert(delays[#delays]==1600 and last().rate==1.0)
+-- Controls must not mutate the selected non-Staff candidate, or the staff setting.
+local oldPlayCount=#played
+keys[10](); keys[11]()
+assert(#played==oldPlayCount and delays[#delays]==1600)
+keys[7](); assert(last().asset==second and delays[#delays]==3000)
 assert(table.concat(logs):find("scale=0.60",1,true))
 assert(table.concat(logs):find("TIME_SET",1,true))
 assert(table.concat(logs):find("rate=0.3 cutoff_ms=1000",1,true))
+assert(table.concat(logs):find("CUTOFF_SET",1,true))
+assert(table.concat(logs):find("cutoff_ms=250",1,true))
+assert(table.concat(logs):find("cutoff_ms=3000",1,true))
 local text=table.concat(logs)
 assert(text:find("field=StartVelocity",1,true) and text:find("parameter=TestVelocity",1,true))
 local _,inspections=text:gsub("STAFF_INSPECT_DONE","")
@@ -194,7 +219,15 @@ assert(inspections==1)
 lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==3 end")
 lua.execute(main_text)
 lua.execute("""
-assert(keys[6] and keys[7] and keys[9] and keys[4] and not keys[2] and not keys[3])
+assert(keys[6] and keys[7] and keys[9] and keys[4] and keys[10] and keys[11]
+    and not keys[2] and not keys[3])
 assert(table.concat(logs):find("SCALE_UNAVAILABLE",1,true))
 """)
-print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, bounded scale, staff time-rates/cutoff and optional key collisions")
+lua.execute("keys,logs={},{}; function IsKeyBindRegistered(key) return key==11 end")
+lua.execute(main_text)
+lua.execute("""
+assert(keys[6] and keys[7] and keys[9] and keys[2] and keys[3] and keys[4]
+    and not keys[10] and not keys[11])
+assert(table.concat(logs):find("CUTOFF_UNAVAILABLE",1,true))
+""")
+print("VFX_BROWSER_POLICY_PASS: Lua syntax, catalog, navigation, staff time-rates and adjustable cutoff with boundary and collision checks")

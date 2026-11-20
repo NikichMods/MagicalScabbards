@@ -16,6 +16,10 @@ local scalePercent = 40
 -- Staff cast spark only: change preview animation rate, never a stock asset.
 local TIME_RATES = {0.2,0.3,0.5}
 local timeRateIndex = 2 -- initial 0.3
+-- Real-time browser cleanup cutoff, independently selectable from particle dilation.
+-- Integer milliseconds avoid rounding drift at quarter-second steps.
+local CUTOFF_MIN_MS, CUTOFF_MAX_MS, CUTOFF_STEP_MS = 250, 3000, 250
+local cutoffMsStaff = 1000
 local ui, labelRef, particle = nil, nil, nil
 local uiFault, particleFault, busy, disabled = false, false, false, false
 local alive, spawn = nil, nil
@@ -339,9 +343,9 @@ local function preview(step, scaleDelta)
         assert(e,"no candidate")
         local isStaff=e.path==STAFF_SPARK
         local rate=isStaff and TIME_RATES[timeRateIndex] or 1.0
-        local cutoffMs=isStaff and 1000 or 1600
+        local cutoffMs=isStaff and cutoffMsStaff or 1600
         local title=("%02d/%02d  %s  scale=%.2f%s"):format(selected,#entries,e.label,size,
-            isStaff and ("  time=%.1f  cutoff=1.0s"):format(rate) or "")
+            isStaff and ("  time=%.1f  cutoff=%.2fs"):format(rate,cutoffMs/1000) or "")
         message(title.." | checking...")
         local asset,info=assetFor(e)
         if not asset then
@@ -393,12 +397,19 @@ local function selectCandidate(action)
     local step = action=="NEXT" and 1 or action=="PREVIOUS" and -1 or 0
     local scaleDelta = action=="SMALLER" and -5 or action=="LARGER" and 5 or 0
     local ok,err=pcall(ExecuteInGameThread,function()
-        if action=="TIME" then
+        if action=="TIME" or action=="CUTOFF_SHORTER" or action=="CUTOFF_LONGER" then
             if not entries or not entries[selected] or entries[selected].path~=STAFF_SPARK then
-                log("TIME_SKIPPED","select Staff cast spark (id=02) first")
+                log("STAFF_CONTROL_SKIPPED","select Staff cast spark (id=02) first action="..action)
                 return
             end
-            timeRateIndex=(timeRateIndex % #TIME_RATES)+1
+            if action=="TIME" then
+                timeRateIndex=(timeRateIndex % #TIME_RATES)+1
+            else
+                local delta=action=="CUTOFF_SHORTER" and -CUTOFF_STEP_MS or CUTOFF_STEP_MS
+                cutoffMsStaff=math.max(CUTOFF_MIN_MS,math.min(CUTOFF_MAX_MS,cutoffMsStaff+delta))
+                log("CUTOFF_SET",("id=02 cutoff_ms=%d range_ms=%d..%d step_ms=%d"):format(
+                    cutoffMsStaff,CUTOFF_MIN_MS,CUTOFF_MAX_MS,CUTOFF_STEP_MS))
+            end
         end
         preview(step,scaleDelta)
     end,EGameThreadMethod.EngineTick)
@@ -444,6 +455,17 @@ if ok then
     end)
     if timeOk then log("TIME_READY","F4 cycles 0.3 -> 0.5 -> 0.2 -> 0.3 on Staff cast spark only")
     else log("TIME_UNAVAILABLE",tostring(timeErr):sub(1,220)) end
+    -- Optional as a pair: a collision must not disable F6/F7/F9, F2/F3 or F4.
+    local cutoffReady=false
+    local cutoffOk,cutoffErr=pcall(function()
+        assert(Key.F10 and Key.F11 and not IsKeyBindRegistered(Key.F10)
+            and not IsKeyBindRegistered(Key.F11),"F10/F11 unavailable")
+        RegisterKeyBind(Key.F10,function() if cutoffReady then selectCandidate("CUTOFF_SHORTER") end end)
+        RegisterKeyBind(Key.F11,function() if cutoffReady then selectCandidate("CUTOFF_LONGER") end end)
+        cutoffReady=true
+    end)
+    if cutoffOk then log("CUTOFF_READY","F10 -250ms / F11 +250ms, 250..3000ms, Staff spark only")
+    else log("CUTOFF_UNAVAILABLE",tostring(cutoffErr):sub(1,220)) end
 else
     disabled=true
     log("UNAVAILABLE",tostring(err):sub(1,300))
