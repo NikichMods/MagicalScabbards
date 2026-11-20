@@ -2,7 +2,7 @@
 name: Candidate checks
 on:
   push:
-    branches: ['dev/release-prep-01']
+    branches: ['dev/release-prep-01', 'dev/vfx-01']
   workflow_dispatch:
 permissions:
   contents: read

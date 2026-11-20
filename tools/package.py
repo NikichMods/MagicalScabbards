@@ -10,7 +10,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ["Scripts/main.lua", "Scripts/equipment.lua", "Scripts/outgoing.lua",
-         "Scripts/reconcile.lua", "Scripts/visibility.lua", "LICENSE", "LICENSING.md", "README.md"]
+         "Scripts/reconcile.lua", "Scripts/visibility.lua", "Scripts/vfx.lua",
+         "LICENSE", "LICENSING.md", "README.md"]
 
 
 def git(*args):
@@ -43,30 +44,30 @@ def build():
     stable = "-test." not in version
     assert 'local DEBUG_LOGGING = false' in main
     assert f"MagicalScabbards-{version}.zip".encode() in files["README.md"]
-    record_name = f"docs/RELEASE_{version}.md" if stable else "docs/RELEASE_CANDIDATE_01.md"
+    record_name = f"docs/RELEASE_{version}.md" if stable else f"docs/RELEASE_CANDIDATE_{version}.md"
     record = git("show", f"{commit}:{record_name}")
+    accepted_test_source = None
     if stable:
         assert f"# MagicalScabbards {version}".encode() in record
-        assert b"dddd75b6195376521fb8aab9dedeb1232e5f9005" in record
+        match = re.search(rb"(?m)^Accepted test source: `([0-9a-f]{40})`$", record)
+        assert match, "Stable release requires an accepted immutable test source"
+        accepted_test_source = match.group(1).decode()
     else:
-        assert f"# Устанавливаемый кандидат 01 — {version}".encode() in record
+        assert f"# MagicalScabbards {version}".encode() in record
+        assert b"NOT ACCEPTED FOR RELEASE" in record
     for name in FILES:
         if name.startswith("Scripts/"):
-            assert files[name].startswith(b"-- SPDX-License-Identifier: MPL-2.0")
-            # The frozen test candidate records source hashes in its report.
-            # Stable assets carry exact per-file SHA-256 in their embedded manifest,
-            # which this packager verifies against the ZIP contents below.
-            if not stable:
-                assert sha(files[name]).encode() in record, f"stale documented hash: {name}"
-            if name != "Scripts/main.lua":
-                assert files[name] == git("show", f"{commit}:research/scabbard-reconcile-bracer-03/{name}"), name
+            assert files[name].startswith(b"-- SPDX-License-Identifier: MPL-2.0"), name
+    assert 'require("vfx")' in main and "Scripts/vfx.lua" in files
+    assert b"ModRef" not in files["Scripts/vfx.lua"], "research browser bridge in production"
+    assert b"snapshot.kinds" not in files["Scripts/vfx.lua"], "staff-only VFX gate remains"
     assert b"Mozilla Public License Version 2.0" in files["LICENSE"]
     files["enabled.txt"] = b""
     manifest = {"mod": "MagicalScabbards", "version": version, "source_commit": commit,
                 "source_url": f"https://github.com/NikichMods/MagicalScabbards/tree/{commit}",
                 "target": "Asterigos Steam 1.09 build 12996889; UE4SS 3.0.1-1181-g83330635; Windows x64",
                 "acceptance": "ACCEPTED" if stable else "PENDING",
-                "accepted_test_source": "dddd75b6195376521fb8aab9dedeb1232e5f9005" if stable else None,
+                "accepted_test_source": accepted_test_source,
                 "sha256": {name: sha(data) for name, data in sorted(files.items())}}
     files["manifest.json"] = (json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
     data = archive(files)

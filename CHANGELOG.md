@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1-test.4 — development candidate, not released
+
+- Added a single short Staff cast spark to every confirmed stowed scabbard disappearance, regardless of equipped weapon family (new game acceptance pending).
+- Fixed scale 0.60, time rate 0.5, cleanup 1500 ms; stock particle light and other visual settings unchanged.
+- Removed the research VFX Browser dependency and settings bridge.
+- Added a bounded exact-asset load fallback for nonresident spark templates; cosmetic failure does not block normal hide/show.
+- Updated exact-source candidate packaging to include the new `vfx.lua` module.
+
 ## 0.1.0 — 2026-11-19
 
 First stable release of MagicalScabbards for Asterigos: Curse of the Stars.
