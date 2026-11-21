@@ -7,7 +7,7 @@ local vfx = require("vfx")
 local DRAW = "/Script/Genesis.BaseCharacterAnimInstance:BeginDoSkill"
 local VIS = "/Script/Engine.SceneComponent:SetVisibility"
 local HIDDEN = "/Script/Engine.SceneComponent:SetHiddenInGame"
-local VERSION = "0.1.1-test.5"
+local VERSION = "0.1.1"
 local DEBUG_LOGGING = false
 
 local lastWarning
@@ -21,7 +21,7 @@ local function log(event, detail)
     elseif not DEBUG_LOGGING and not errors[event] and event ~= "START"
         and event ~= "CLEANED" and event ~= "WRITER" and event ~= "HIDDEN"
         and event ~= "RELEASED" and event ~= "RETIRED" and event ~= "FOREIGN_CONTROLLED"
-        and event ~= "DODGE" then
+        and event ~= "DODGE" and event ~= "ITEM" then
         return
     end
     local level = errors[event] and "ERROR" or
@@ -29,7 +29,7 @@ local function log(event, detail)
     print(("[MagicalScabbards %s] %s %s %s\n"):format(VERSION, level, event, detail or ""))
 end
 
-local controller, session, handle, loading, maskedIdentity, lastSample, windowIdentity
+local controller, session, handle, loading, maskedIdentity, lastSample
 local retryAt, retryDelay
 local lastNote
 local hooks = {}
@@ -38,7 +38,7 @@ local epoch = 0
 local function release(reason)
     epoch = epoch + 1
     policy.reset()
-    maskedIdentity, lastSample, windowIdentity, retryAt, retryDelay = nil, nil, nil, nil, nil
+    maskedIdentity, lastSample, retryAt, retryDelay = nil, nil, nil, nil
     if controller and controller.active() then return controller.release(reason) end
     return not controller or not controller.pending()
 end
@@ -62,22 +62,17 @@ local function sample(ticket)
                 or ((not now or not (now >= 0 and now < math.huge)) and "context-lost")
                 or (gap and gap < 0 and "clock-regressed")
                 or (snapshot.phase ~= "STOWED" and ("phase-" .. snapshot.phase))
-                or (not equipment.supported(snapshot) and "kit-unsupported")
                 or (snapshot.identity ~= maskedIdentity and "snapshot-identity-changed")
             if reason then release(reason) end
             return
         end
         if not equipment.supported(snapshot) then
             policy.reset()
-            windowIdentity, retryAt, retryDelay = nil, nil, nil
+            retryAt, retryDelay = nil, nil
             return
         end
-        if (gap and (gap < 0 or gap > 250)) or windowIdentity ~= snapshot.identity then
-            windowIdentity = snapshot.identity
-            retryAt, retryDelay = nil, nil
-            log("WINDOW_START", ("ms=%.1f"):format(now))
-        end
-        local intent, preview, elapsed = policy.observe(snapshot, now, equipment.read)
+        local intent, preview, elapsed, started = policy.observe(snapshot, now, equipment.read)
+        if started then log("WINDOW_START", ("ms=%.1f"):format(now)) end
         if preview then vfx.preview(snapshot, elapsed) end
         if intent ~= "SUPPRESSED" then
             retryAt, retryDelay = nil, nil
@@ -171,17 +166,18 @@ local function start()
         hook(path, function(...) watch(ticket, channel, "pre", ...) end,
             function(...) watch(ticket, channel, "post", ...) end)
     end
-    local reportedDodge = {}
+    local reportedAction = {}
     hook(DRAW, function(param)
         if session ~= ticket then return end
         local ok, err = pcall(function()
             local anim = param:get()
             if equipment.id(anim) ~= equipment.anim() then return end
             local read, skill = pcall(function() return anim:GetToDoSkill():ToString() end)
-            if read and equipment.isDodge(skill) then
-                if controller.active() and not reportedDodge[skill] then
-                    reportedDodge[skill] = true
-                    log("DODGE", "preserving mask for skill=" .. skill)
+            local action = read and equipment.stowedAction(skill)
+            if action then
+                if controller.active() and not reportedAction[skill] then
+                    reportedAction[skill] = true
+                    log(action, "preserving mask for skill=" .. skill)
                 end
                 return
             end

@@ -2,6 +2,7 @@
 
 - Blue sparks play just before Hilda's scabbards disappear with a supported stowed weapon loadout.
 - A normal roll keeps hidden scabbards hidden while the weapons stay stowed. Drawing a weapon restores the scabbards.
+- Recognized item actions, including potions, locator stones, Glimmer and elemental enhancements, preserve hidden scabbards while the weapons stay stowed.
 - A brief game-thread stall can leave already-hidden scabbards hidden when the same stowed equipment is confirmed after the pause.
 - Scabbards still hide after three seconds of confirmed stowed state. The sparks use an existing Asterigos effect. The package contains Lua source and documentation.
 

@@ -24,13 +24,27 @@ local function visible(o) return valid(o) and o.bVisible == true and o.bHiddenIn
 local function enum(n) return math.type(n) == "integer" and (n >= 0 and n <= 5 or n == 7) end
 local function state(phase) return {phase=phase} end
 
--- Exact stock movement rows. Dodge attacks and active weapon skills stay on the draw path.
-local dodgeMovement = {
-    hilda_dodge=true, hilda_dodge_early=true,
-    hilda_step=true, hilda_step_early=true,
+-- Exact cooked Skill_Player rows. Equipment and hand checks still apply.
+local stowedActions = {
+    hilda_dodge="DODGE", hilda_dodge_early="DODGE",
+    hilda_step="DODGE", hilda_step_early="DODGE",
+    hilda_switch_light="ITEM",
+    hilda_drink_hp_rate="ITEM", hilda_drink_hp_rate_plus="ITEM",
+    hilda_drink_stamina="ITEM", hilda_drink_stamina_rate="ITEM",
+    hilda_drink_astral_pool="ITEM", hilda_drink_astral_pool_rate="ITEM",
+    hilda_drink_add_attribute="ITEM", hilda_drink_add_talent="ITEM", hilda_drink_reset_talent="ITEM",
+    enhance_astral="ITEM", enhance_fire="ITEM", enhance_ice="ITEM", enhance_thunder="ITEM",
+    hilda_useitem_throwlocator_begin="ITEM", hilda_useitem_throwlocator_loop="ITEM",
+    hilda_useitem_throwlocator_release="ITEM", hilda_useitem_throwlocator_end="ITEM",
+    hilda_useitem_throwknife_begin="ITEM", hilda_useitem_throwknife_loop="ITEM",
+    hilda_useitem_throwknife_release="ITEM", hilda_useitem_throwknife_end="ITEM",
+    hilda_useitem_throwbomb_begin="ITEM", hilda_useitem_throwbomb_loop="ITEM",
+    hilda_useitem_throwbomb_release="ITEM", hilda_useitem_throwbomb_end="ITEM",
+    hilda_useitem_teleport_a="ITEM", hilda_useitem_teleport_b="ITEM",
+    hilda_useitem_teleport_c="ITEM", hilda_useitem_teleport_d="ITEM",
 }
-local function idleOrDodge(skill)
-    return skill == "None" or dodgeMovement[skill]
+local function permitsStowed(skill)
+    return skill == "None" or stowedActions[skill] ~= nil
 end
 
 local hudPath, animId
@@ -143,7 +157,7 @@ local function readEquipmentState()
         end
     end
     local phase = hand ~= 7 and "DRAWN" or "UNKNOWN"
-    if hand == 7 and occupied and complete and idleOrDodge(doing) and idleOrDodge(nextSkill) then
+    if hand == 7 and occupied and complete and permitsStowed(doing) and permitsStowed(nextSkill) then
         phase = "STOWED"
     end
     local note
@@ -317,5 +331,5 @@ end
 
 return {read=readEquipmentState, targets=targets, admission=resolveAdmission, owned=resolveOwned,
     retired=retired, ancestor=affectedByAncestor, id=id, name=name, supported=supported,
-    isDodge=function(skill) return dodgeMovement[skill] == true end,
+    stowedAction=function(skill) return stowedActions[skill] end,
     anim=function() return animId end, reset=function() hudPath, animId, hudRetry = nil, nil, 0 end}

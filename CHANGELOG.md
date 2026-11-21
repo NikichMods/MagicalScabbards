@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.1 — 2026-11-21
+
+- Play blue sparks before a confirmed scabbard hide with a supported weapon loadout.
+- Preserve hidden scabbards during ordinary rolls and recognized item actions while weapons stay stowed.
+- Preserve an intact hide across brief observation stalls. A new hide still requires three seconds of confirmed stowed state.
+- Keep immediate restoration when drawing a weapon.
+
+## 0.1.1-test.7 — development candidate, not released
+
+- Keep hidden scabbards hidden during recognized stock item actions while the weapons stay stowed.
+
+## 0.1.1-test.6 — development candidate, not released
+
+- Centralize the stowed countdown and remove an unreachable check. Recheck the transition and draw behavior from test.5.
+
 ## 0.1.1-test.5 — development candidate, not released
 
 - Preserve hidden scabbards across delayed observations when the current equipment is still stowed and the mask remains intact. New hides still require a continuous three-second observation window.

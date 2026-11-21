@@ -2,11 +2,9 @@
 
 MagicalScabbards is a lightweight **Asterigos: Curse of the Stars** mod that hides Hilda's scabbards and weapons stored inside them when her weapons are put away.
 
-The scabbards return when Hilda starts drawing a weapon. They remain visible during combat and while she puts the weapon away, then disappear after **3 seconds of confirmed stowed state**. This does not depend on whether Hilda is in combat.
+The scabbards return when Hilda starts drawing a weapon. They remain visible while the weapon is drawn or being put away, then disappear after **3 seconds of confirmed stowed state**.
 
-**Latest stable version:** 0.1.0 — [Download on GitHub Releases](https://github.com/NikichMods/MagicalScabbards/releases/latest).
-
-**Unreleased test candidate:** `0.1.1-test.5` (`MagicalScabbards-0.1.1-test.5.zip`). A brief game-thread stall preserves already-hidden scabbards when the next snapshot confirms the same stowed equipment and intact ownership. Blue Staff cast sparks from test.4 remain available with all supported weapon families and combinations. Full in-game acceptance is pending.
+**Latest stable version:** 0.1.1 — [Download on GitHub Releases](https://github.com/NikichMods/MagicalScabbards/releases/latest).
 
 ## Features
 
@@ -14,7 +12,9 @@ The scabbards return when Hilda starts drawing a weapon. They remain visible dur
 - Keeps weapons in Hilda's hands and her wrist bracers visible.
 - Restores the game's normal scabbard visibility when a weapon is drawn, during equipment changes, and when the mod is disabled.
 - Uses the game's existing meshes. No replacement game assets, save changes, or other mods are required beyond UE4SS.
-- Does not add a visual magic effect in v0.1.0. This may be considered separately.
+- Plays blue sparks just before the scabbards disappear.
+- Keeps hidden scabbards hidden during normal rolls and recognized item actions while the weapons stay stowed.
+- Preserves existing hides across brief stalls when the next check confirms the same stowed equipment.
 
 ## Requirements
 
@@ -25,10 +25,10 @@ Install UE4SS separately. This mod does not include UE4SS, game assets, or asset
 ## Installation
 
 1. Close the game.
-2. Download `MagicalScabbards-0.1.0.zip` from [Releases](https://github.com/NikichMods/MagicalScabbards/releases/tag/v0.1.0).
-3. Extract it into your **UE4SS `Mods` folder**, not into the game's root directory. The layout must be `Mods/MagicalScabbards/Scripts/main.lua` with the four other Lua files beside it.
+2. Download `MagicalScabbards-0.1.1.zip` from [Releases](https://github.com/NikichMods/MagicalScabbards/releases/tag/v0.1.1).
+3. Extract it into your **UE4SS `Mods` folder**. The package creates `Mods/MagicalScabbards/Scripts/main.lua` with five other Lua files beside it.
 4. Keep `Mods/MagicalScabbards/enabled.txt` in place for automatic startup.
-5. Make sure you have **only one active MagicalScabbards installation**. Disable earlier test or research copies in `enabled.txt` and `mods.txt`; do not alter unrelated mods.
+5. Keep only one active MagicalScabbards installation.
 
 MagicalScabbards starts automatically when the game loads. No hotkeys are needed for normal play.
 
@@ -41,11 +41,11 @@ MagicalScabbards starts automatically when the game loads. No hotkeys are needed
 - Changing weapons in the menu may briefly show scabbards and restart the 3-second countdown. This is intentional.
 - Using bracers may also trigger the ordinary show/hide cycle. The wrist meshes themselves are not hidden.
 - Hot Lua unloading is not supported. Use F8 to disable the active session, or close the game to update files.
-- An isolated `CLEANUP_PENDING owner-ended` message was observed near process shutdown during testing; its cause was not established. Controlled stop/restart/stop succeeded in a separate test. Report any **visible in-game defect** or repeatable problem during play.
+- A `CLEANUP_PENDING owner-ended` warning can occur at game exit. Its cause is unknown. Report any repeatable problem during play.
 
 ## Troubleshooting
 
-The UE4SS log identifies the mod as `[MagicalScabbards 0.1.0]`. Look for `START`, `HIDDEN`, `RELEASED`, and `CLEANED`. If a problem happens, include the game/UE4SS versions, your two equipped weapon types, the steps that triggered it, and the relevant UE4SS log in a [GitHub Issue](https://github.com/NikichMods/MagicalScabbards/issues).
+The UE4SS log identifies the mod as `[MagicalScabbards 0.1.1]`. Look for `START`, `HIDDEN`, `RELEASED`, and `CLEANED`. Effects are logged under `[MagicalScabbards VFX]`. If a problem happens, include the game and UE4SS versions, equipped weapon types, steps, and relevant log in a [GitHub Issue](https://github.com/NikichMods/MagicalScabbards/issues).
 
 The ZIP includes a `manifest.json` with the exact source commit and SHA-256 of the files. The matching checksums and manifest are also included as release assets. Do not install the archive one folder deeper than shown above.
 
@@ -53,4 +53,4 @@ The ZIP includes a `manifest.json` with the exact source commit and SHA-256 of t
 
 Original source code and accompanying documentation: **MPL-2.0**. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md). Asterigos and other third-party content belong to their respective owners.
 
-[Changelog](CHANGELOG.md) · [Release evidence](docs/RELEASE_0.1.0.md) · [Project status](docs/STATUS.md)
+[Changelog](CHANGELOG.md) · [Release evidence](docs/RELEASE_0.1.1.md) · [Project status](docs/STATUS.md)

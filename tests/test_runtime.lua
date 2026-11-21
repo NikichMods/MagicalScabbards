@@ -63,7 +63,40 @@ s.tick(6000)
 assert(s.restores==6 and s.has("clock-regressed")); s.visible()
 s.keys[8]()
 
--- Only pure movement can preserve a mask and the existing stowed window.
+-- Item skill phases preserve the mask, but an actual draw still releases it.
+s = fixture({quiet=true})
+s.arm(0); s.tick(3000)
+for i,skill in ipairs({"hilda_drink_hp_rate", "hilda_useitem_throwlocator_begin",
+    "hilda_useitem_throwlocator_loop", "hilda_useitem_throwlocator_release", "hilda_useitem_throwlocator_end",
+    "hilda_switch_light", "enhance_astral", "enhance_fire", "enhance_ice", "enhance_thunder",
+    "hilda_useitem_throwknife_begin", "hilda_useitem_throwbomb_release", "hilda_useitem_teleport_a"}) do
+    s.pendingSkill = skill
+    s.draw()
+    s.doing, s.pendingSkill = skill, nil
+    s.tick(3000+100*i)
+    assert(s.hides==6 and s.restores==0 and s.scans==1)
+    assert(s.has("ITEM preserving mask for skill="..skill))
+end
+s.pendingSkill = "hilda_staff_atk1_idle"
+s.draw(); s.visible()
+assert(s.restores==6 and s.has("draw-pre skill=hilda_staff_atk1_idle"))
+s.keys[8]()
+
+s = fixture({quiet=true})
+s.arm(0); s.tick(3000)
+s.pendingSkill = "hilda_useitem_unverified"
+s.draw(); s.visible()
+assert(s.restores==6 and s.has("draw-pre skill=hilda_useitem_unverified"))
+s.keys[8]()
+
+s = fixture({quiet=true})
+s.arm(0); s.tick(3000)
+s.doing, s.hand = "hilda_drink_hp_rate", 4
+s.tick(3100); s.visible()
+assert(s.restores==6 and s.has("phase-DRAWN"))
+s.keys[8]()
+
+-- Pure movement can also preserve a mask and the existing stowed window.
 s = fixture({quiet=true})
 for t=0,2800,100 do s.tick(t) end
 s.pendingSkill = "hilda_dodge"
