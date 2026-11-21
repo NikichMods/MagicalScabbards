@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1-test.7 — development candidate, not released
+
+- Keep hidden scabbards hidden during recognized stock item actions while the weapons stay stowed.
+
 ## 0.1.1-test.6 — development candidate, not released
 
 - Centralize the stowed countdown and remove an unreachable check. Recheck the transition and draw behavior from test.5.
